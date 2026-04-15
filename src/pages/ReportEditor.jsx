@@ -8,6 +8,7 @@ import EditorBlock from "@/components/editor/EditorBlock";
 import ChartBlock from "@/components/editor/ChartBlock";
 import PredictionBlock from "@/components/editor/PredictionBlock";
 import AISidebar from "@/components/editor/AISidebar";
+import MonetizationPanel from "@/components/editor/MonetizationPanel";
 
 export default function ReportEditor() {
   const [title, setTitle] = useState("");
@@ -131,6 +132,9 @@ export default function ReportEditor() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {/* Monetization */}
+      <MonetizationPanel />
 
       {/* Prediction Block */}
       <PredictionBlock onPublish={handlePublish} />
