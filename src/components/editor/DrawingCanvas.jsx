@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
-import { Pencil, Minus, Square, TrendingUp, Trash2, Type } from "lucide-react";
+import { Pencil, Minus, Square, TrendingUp, Trash2 } from "lucide-react";
 
 const PATTERNS = [
   { label: "Head & Shoulders", emoji: "📈" },
@@ -17,10 +17,11 @@ const TOOLS = [
   { id: "trend", icon: TrendingUp, label: "Trend" },
 ];
 
-const COLORS = ["#ef4444", "#22c55e", "#3b82f6", "#f59e0b", "#a855f7", "#ffffff", "#000000"];
+const COLORS = ["#ef4444", "#22c55e", "#3b82f6", "#f59e0b", "#a855f7", "#ffffff"];
 
-export default function DrawingCanvas({ width = 600, height = 260 }) {
+export default function DrawingCanvas() {
   const canvasRef = useRef(null);
+  const containerRef = useRef(null);
   const [tool, setTool] = useState("pencil");
   const [color, setColor] = useState("#ef4444");
   const [lineWidth, setLineWidth] = useState(2);
@@ -31,6 +32,19 @@ export default function DrawingCanvas({ width = 600, height = 260 }) {
   const [snapshot, setSnapshot] = useState(null);
   const [showPatterns, setShowPatterns] = useState(false);
   const [annotations, setAnnotations] = useState([]);
+  const [canvasSize, setCanvasSize] = useState({ w: 600, h: 224 });
+
+  // Sync canvas pixel size to actual rendered size
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect;
+      setCanvasSize({ w: Math.floor(width), h: Math.floor(height) });
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const getPos = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
@@ -40,7 +54,7 @@ export default function DrawingCanvas({ width = 600, height = 260 }) {
   };
 
   const redraw = useCallback((ctx) => {
-    ctx.clearRect(0, 0, width, height);
+    ctx.clearRect(0, 0, canvasSize.w, canvasSize.h);
     paths.forEach((p) => {
       ctx.beginPath();
       ctx.strokeStyle = p.color;
@@ -58,19 +72,14 @@ export default function DrawingCanvas({ width = 600, height = 260 }) {
         if (p.type === "trend") {
           const dx = p.points[1].x - p.points[0].x;
           const dy = p.points[1].y - p.points[0].y;
-          const extended = { x: p.points[1].x + dx * 0.5, y: p.points[1].y + dy * 0.5 };
           ctx.setLineDash([5, 5]);
           ctx.moveTo(p.points[1].x, p.points[1].y);
-          ctx.lineTo(extended.x, extended.y);
+          ctx.lineTo(p.points[1].x + dx * 0.5, p.points[1].y + dy * 0.5);
           ctx.stroke();
           ctx.setLineDash([]);
         }
       } else if (p.type === "rect" && p.points.length >= 2) {
-        ctx.strokeRect(
-          p.points[0].x, p.points[0].y,
-          p.points[1].x - p.points[0].x,
-          p.points[1].y - p.points[0].y
-        );
+        ctx.strokeRect(p.points[0].x, p.points[0].y, p.points[1].x - p.points[0].x, p.points[1].y - p.points[0].y);
       }
     });
     annotations.forEach((a) => {
@@ -78,29 +87,30 @@ export default function DrawingCanvas({ width = 600, height = 260 }) {
       ctx.font = "bold 11px Inter, sans-serif";
       ctx.fillText(a.label, a.x, a.y);
     });
-  }, [paths, annotations, width, height]);
+  }, [paths, annotations, canvasSize]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
+    if (!canvas) return;
     const ctx = canvas.getContext("2d");
     redraw(ctx);
   }, [redraw]);
 
   const onMouseDown = (e) => {
+    e.preventDefault();
     const pos = getPos(e);
     setDrawing(true);
     setStartPos(pos);
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    setSnapshot(ctx.getImageData(0, 0, width, height));
+    const ctx = canvasRef.current.getContext("2d");
+    setSnapshot(ctx.getImageData(0, 0, canvasSize.w, canvasSize.h));
     if (tool === "pencil") setCurrentPath([pos]);
   };
 
   const onMouseMove = (e) => {
+    e.preventDefault();
     if (!drawing) return;
     const pos = getPos(e);
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvasRef.current.getContext("2d");
 
     if (tool === "pencil") {
       const newPath = [...currentPath, pos];
@@ -133,6 +143,7 @@ export default function DrawingCanvas({ width = 600, height = 260 }) {
   };
 
   const onMouseUp = (e) => {
+    e.preventDefault();
     if (!drawing) return;
     const pos = getPos(e);
     setDrawing(false);
@@ -145,92 +156,65 @@ export default function DrawingCanvas({ width = 600, height = 260 }) {
   };
 
   const addPattern = (pattern) => {
-    setAnnotations((prev) => [...prev, { label: `[${pattern.emoji} ${pattern.label}]`, x: 20, y: 30 + prev.length * 20, color: "#f59e0b" }]);
+    setAnnotations((prev) => [...prev, { label: `${pattern.emoji} ${pattern.label}`, x: 20, y: 24 + prev.length * 22, color: "#f59e0b" }]);
     setShowPatterns(false);
   };
 
-  const clearAll = () => {
-    setPaths([]);
-    setAnnotations([]);
-  };
-
   return (
-    <div className="mt-2">
+    <div ref={containerRef} className="absolute inset-0 flex flex-col">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2 mb-2 p-2 bg-secondary/50 rounded-lg border border-border">
+      <div className="flex flex-wrap items-center gap-1.5 px-2 py-1 bg-background/90 backdrop-blur border-b border-border/60 z-10 flex-shrink-0">
         <div className="flex gap-1">
           {TOOLS.map((t) => {
             const Icon = t.icon;
             return (
-              <button
-                key={t.id}
-                onClick={() => setTool(t.id)}
-                title={t.label}
-                className={`p-1.5 rounded-md transition-colors ${tool === t.id ? "bg-primary text-white" : "text-muted-foreground hover:bg-muted"}`}
-              >
-                <Icon className="w-3.5 h-3.5" />
+              <button key={t.id} onClick={() => setTool(t.id)} title={t.label}
+                className={`p-1.5 rounded transition-colors ${tool === t.id ? "bg-primary text-white" : "text-muted-foreground hover:bg-muted"}`}>
+                <Icon className="w-3 h-3" />
               </button>
             );
           })}
         </div>
-        <div className="w-px h-5 bg-border" />
+        <div className="w-px h-4 bg-border" />
         <div className="flex gap-1">
           {COLORS.map((c) => (
-            <button
-              key={c}
-              onClick={() => setColor(c)}
-              className={`w-5 h-5 rounded-full border-2 transition-all ${color === c ? "border-foreground scale-110" : "border-transparent"}`}
-              style={{ backgroundColor: c }}
-            />
+            <button key={c} onClick={() => setColor(c)}
+              className={`w-4 h-4 rounded-full border-2 transition-all ${color === c ? "border-foreground scale-125" : "border-transparent"}`}
+              style={{ backgroundColor: c }} />
           ))}
         </div>
-        <div className="w-px h-5 bg-border" />
-        <select
-          value={lineWidth}
-          onChange={(e) => setLineWidth(Number(e.target.value))}
-          className="text-xs border border-border rounded px-1 py-0.5 bg-background"
-        >
+        <div className="w-px h-4 bg-border" />
+        <select value={lineWidth} onChange={(e) => setLineWidth(Number(e.target.value))}
+          className="text-[10px] border border-border rounded px-1 py-0.5 bg-background">
           <option value={1}>Thin</option>
           <option value={2}>Normal</option>
           <option value={4}>Thick</option>
         </select>
-        <div className="w-px h-5 bg-border" />
         <div className="relative">
-          <button
-            onClick={() => setShowPatterns(!showPatterns)}
-            className="text-xs px-2 py-1 border border-border rounded-md hover:bg-muted transition-colors flex items-center gap-1"
-          >
+          <button onClick={() => setShowPatterns(!showPatterns)}
+            className="text-[10px] px-2 py-0.5 border border-border rounded hover:bg-muted transition-colors flex items-center gap-1">
             <TrendingUp className="w-3 h-3" /> Patterns
           </button>
           {showPatterns && (
-            <div className="absolute top-full left-0 mt-1 z-10 bg-card border border-border rounded-xl shadow-lg p-2 grid grid-cols-2 gap-1 w-48">
+            <div className="absolute top-full left-0 mt-1 z-20 bg-card border border-border rounded-xl shadow-lg p-2 grid grid-cols-2 gap-1 w-44">
               {PATTERNS.map((p) => (
-                <button
-                  key={p.label}
-                  onClick={() => addPattern(p)}
-                  className="text-xs px-2 py-1.5 rounded-lg hover:bg-muted text-left flex items-center gap-1.5"
-                >
-                  <span>{p.emoji}</span>
-                  <span>{p.label}</span>
+                <button key={p.label} onClick={() => addPattern(p)}
+                  className="text-[10px] px-2 py-1 rounded hover:bg-muted text-left flex items-center gap-1">
+                  <span>{p.emoji}</span><span>{p.label}</span>
                 </button>
               ))}
             </div>
           )}
         </div>
-        <button
-          onClick={clearAll}
-          className="ml-auto p-1.5 text-muted-foreground hover:text-loss transition-colors"
-          title="Clear drawing"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
+        <button onClick={() => { setPaths([]); setAnnotations([]); }} className="ml-auto p-1 text-muted-foreground hover:text-loss" title="Clear">
+          <Trash2 className="w-3 h-3" />
         </button>
       </div>
-
-      {/* Canvas */}
+      {/* Canvas fills remaining space */}
       <canvas
         ref={canvasRef}
-        width={width}
-        height={height}
+        width={canvasSize.w}
+        height={canvasSize.h - 32}
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
@@ -238,10 +222,9 @@ export default function DrawingCanvas({ width = 600, height = 260 }) {
         onTouchStart={onMouseDown}
         onTouchMove={onMouseMove}
         onTouchEnd={onMouseUp}
-        className="w-full rounded-lg border border-dashed border-primary/30 cursor-crosshair bg-transparent"
-        style={{ touchAction: "none" }}
+        className="flex-1 cursor-crosshair bg-transparent"
+        style={{ touchAction: "none", display: "block" }}
       />
-      <p className="text-[10px] text-muted-foreground mt-1">Draw trendlines, levels, and patterns directly on the chart above.</p>
     </div>
   );
 }

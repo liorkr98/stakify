@@ -13,25 +13,31 @@ import ReportCard from "@/components/feed/ReportCard";
 
 const SPECIALTY_OPTIONS = ["AI & Semiconductors", "Big Tech", "EV & Clean Energy", "Macro", "Consumer Tech", "Financials", "Crypto & Web3", "Healthcare", "E-Commerce", "Options Flow"];
 
+const PROFILE_KEY = "stakify_profile";
+
 export default function EditProfilePage() {
   const navigate = useNavigate();
   const analyst = MOCK_ANALYSTS[0];
+
+  // Load saved profile from localStorage or fall back to mock defaults
+  const saved = (() => { try { return JSON.parse(localStorage.getItem(PROFILE_KEY)) || {}; } catch { return {}; } })();
+
   const [tab, setTab] = useState("edit");
-  const [name, setName] = useState(analyst.name);
-  const [bio, setBio] = useState(analyst.bio || "");
-  const [avatar, setAvatar] = useState(analyst.avatar);
+  const [name, setName] = useState(saved.name || analyst.name);
+  const [bio, setBio] = useState(saved.bio || analyst.bio || "");
+  const [avatar, setAvatar] = useState(saved.avatar || analyst.avatar);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = React.useRef(null);
-  const [twitter, setTwitter] = useState("@sarahchen_finance");
-  const [linkedin, setLinkedin] = useState("sarahchen");
-  const [website, setWebsite] = useState("sarahchen.com");
-  const [tagline, setTagline] = useState("Senior Equity Research Analyst · Tech & AI Specialist");
+  const [twitter, setTwitter] = useState(saved.twitter || "@sarahchen_finance");
+  const [linkedin, setLinkedin] = useState(saved.linkedin || "sarahchen");
+  const [website, setWebsite] = useState(saved.website || "sarahchen.com");
+  const [tagline, setTagline] = useState(saved.tagline || "Senior Equity Research Analyst · Tech & AI Specialist");
   const [tweet, setTweet] = useState("");
   const [tweets, setTweets] = useState([
     { id: 1, content: "Watching NVDA open. This AI infrastructure cycle has legs — don't fight the tape. 🟢", time: "2h ago" },
     { id: 2, content: "Fed commentary was more hawkish than expected. Rotating out of rate-sensitive names. Staying long quality tech.", time: "1d ago" },
   ]);
-  const [selectedSpecialties, setSelectedSpecialties] = useState(analyst.specialties || []);
+  const [selectedSpecialties, setSelectedSpecialties] = useState(saved.specialties || analyst.specialties || []);
   const [freeReports, setFreeReports] = useState(["r1"]);
 
   const toggleSpecialty = (s) => {
@@ -67,6 +73,7 @@ export default function EditProfilePage() {
   };
 
   const handleSave = async () => {
+    localStorage.setItem(PROFILE_KEY, JSON.stringify({ name, bio, avatar, twitter, linkedin, website, tagline, specialties: selectedSpecialties }));
     toast.success("Profile saved!");
     navigate("/dashboard");
   };

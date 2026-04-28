@@ -128,6 +128,8 @@ export const MOCK_REPORTS = [
     excerpt: "NVIDIA continues to dominate the AI infrastructure market with its H200 and B100 chips. The data center revenue growth trajectory suggests significant upside from current levels.",
     isPremium: true,
     price: 4.99,
+    industry: "AI & Semiconductors",
+    marketCap: "mega",
   },
   {
     id: "r2",
@@ -139,6 +141,8 @@ export const MOCK_REPORTS = [
     publishedAt: "2026-04-09T10:15:00Z",
     excerpt: "While the autonomous driving narrative is compelling, the timeline for mass deployment remains uncertain. We analyze the key catalysts and risks for the next 6 months.",
     isPremium: false,
+    industry: "EV & Clean Energy",
+    marketCap: "large",
   },
   {
     id: "r3",
@@ -150,6 +154,8 @@ export const MOCK_REPORTS = [
     publishedAt: "2026-04-08T09:00:00Z",
     excerpt: "Apple's integration of on-device AI with Apple Intelligence represents a significant competitive moat. We examine the revenue implications of the services pivot.",
     isPremium: false,
+    industry: "Big Tech",
+    marketCap: "mega",
   },
   {
     id: "r4",
@@ -162,6 +168,8 @@ export const MOCK_REPORTS = [
     excerpt: "Rising credit defaults and compressed net interest margins signal trouble for traditional banking. We present our bearish thesis with a 6-month price target.",
     isPremium: true,
     price: 6.99,
+    industry: "Financials",
+    marketCap: "mega",
   },
   {
     id: "r5",
@@ -173,6 +181,8 @@ export const MOCK_REPORTS = [
     publishedAt: "2026-04-06T11:45:00Z",
     excerpt: "Reality Labs is showing signs of traction with enterprise VR adoption. Combined with ad revenue growth, Meta presents a compelling risk/reward case.",
     isPremium: false,
+    industry: "Big Tech",
+    marketCap: "mega",
   },
   {
     id: "r6",
@@ -185,6 +195,8 @@ export const MOCK_REPORTS = [
     excerpt: "AMD's MI300X is gaining real enterprise traction. With NVIDIA capacity constraints, AMD could capture 15-20% of the AI accelerator market in 2026.",
     isPremium: true,
     price: 4.99,
+    industry: "AI & Semiconductors",
+    marketCap: "large",
   },
   {
     id: "r7",
@@ -196,6 +208,8 @@ export const MOCK_REPORTS = [
     publishedAt: "2026-04-04T13:00:00Z",
     excerpt: "Netflix's ad-supported tier is growing faster than expected, now at 40M MAUs. Combined with password sharing crackdown tailwinds, the revenue outlook is compelling.",
     isPremium: false,
+    industry: "Consumer Tech",
+    marketCap: "large",
   },
   {
     id: "r8",
@@ -208,6 +222,8 @@ export const MOCK_REPORTS = [
     excerpt: "Palantir's AIP platform is becoming the default AI operating system for US government agencies. Defense contracts pipeline exceeds $2B for FY2026.",
     isPremium: true,
     price: 7.99,
+    industry: "AI & Semiconductors",
+    marketCap: "mid",
   },
   {
     id: "r9",
@@ -219,6 +235,8 @@ export const MOCK_REPORTS = [
     publishedAt: "2026-04-02T15:00:00Z",
     excerpt: "Coinbase's institutional custody business is the real moat. While retail trading volumes are volatile, the B2B layer is becoming indispensable to crypto infrastructure.",
     isPremium: false,
+    industry: "Crypto & Web3",
+    marketCap: "mid",
   },
   {
     id: "r10",
@@ -230,6 +248,8 @@ export const MOCK_REPORTS = [
     publishedAt: "2026-04-01T11:00:00Z",
     excerpt: "Shopify's payments penetration rate is hitting all-time highs. The Shopify Balance and Capital products are creating a financial services layer worth $20B+ standalone.",
     isPremium: false,
+    industry: "E-Commerce",
+    marketCap: "mid",
   },
   {
     id: "r11",
@@ -242,6 +262,8 @@ export const MOCK_REPORTS = [
     excerpt: "ARM's v9 architecture royalty rates are 2x v8. As AI edge devices proliferate, every chip shipped generates higher royalties. The business model is structurally superior.",
     isPremium: true,
     price: 5.99,
+    industry: "AI & Semiconductors",
+    marketCap: "large",
   },
   {
     id: "r12",
@@ -253,6 +275,8 @@ export const MOCK_REPORTS = [
     publishedAt: "2026-03-30T14:00:00Z",
     excerpt: "Rivian burns $1.5B per quarter. While Amazon's delivery van contract provides a floor, the consumer EV ramp is far behind targets. Cash runway is the critical risk.",
     isPremium: false,
+    industry: "EV & Clean Energy",
+    marketCap: "small",
   },
 ];
 

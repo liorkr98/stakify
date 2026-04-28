@@ -19,7 +19,8 @@ const MOCK_RESULT = [
   { type: "unverified", claim: "Enterprise AI capex will triple by 2027.", note: "No primary source cited; estimate varies widely across research firms." },
 ];
 
-export default function FactChecker({ reportContent }) {
+export default function FactChecker({ reportContent, isAccessible }) {
+  if (!isAccessible) return null;
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -118,9 +119,11 @@ export default function FactChecker({ reportContent }) {
                     {cfg.label}
                   </span>
                 </div>
-                <div className="ml-7 mt-1">
-                  <CommunityNotes claimText={item.claim} />
-                </div>
+                {(item.type === "opinion" || item.type === "misleading") && (
+                  <div className="ml-7 mt-1">
+                    <CommunityNotes claimText={item.claim} />
+                  </div>
+                )}
               </div>
             );
           })}

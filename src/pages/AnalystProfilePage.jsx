@@ -1,10 +1,25 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Twitter, Globe, Linkedin, UserPlus, MessageCircle, BarChart3, FileText, Star } from "lucide-react";
+import { ArrowLeft, Twitter, Globe, Linkedin, UserPlus, MessageCircle, BarChart3, FileText, Star, Target, Award, Users, Flame, Trophy, BookOpen, Rocket, Shield, CheckCircle, Clock, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MOCK_ANALYSTS, MOCK_REPORTS } from "@/lib/mockData";
 import ReportCard from "@/components/feed/ReportCard";
+
+const ACHIEVEMENTS = [
+  { label: "First Report", icon: FileText, earned: true },
+  { label: "10 Predictions", icon: Target, earned: true },
+  { label: "80%+ Accuracy", icon: Award, earned: true },
+  { label: "100 Followers", icon: Users, earned: true },
+  { label: "500 Followers", icon: Users, earned: true },
+  { label: "First Premium", icon: Star, earned: true },
+  { label: "Streak x3", icon: Flame, earned: true },
+  { label: "Top 10", icon: Trophy, earned: false },
+  { label: "1K Likes", icon: CheckCircle, earned: false },
+  { label: "50 Reports", icon: BookOpen, earned: false },
+  { label: "90%+ Accuracy", icon: Shield, earned: false },
+  { label: "Streak x10", icon: Rocket, earned: false },
+];
 
 export default function AnalystProfilePage() {
   const navigate = useNavigate();
@@ -138,6 +153,30 @@ export default function AnalystProfilePage() {
             </div>
           );
         })}
+      </div>
+
+      {/* Achievements */}
+      <div className="bg-card border border-border/60 rounded-xl p-5 mb-8">
+        <h2 className="text-sm font-bold mb-3 flex items-center gap-2">
+          <Trophy className="w-4 h-4 text-amber-500" /> Achievements
+          <span className="ml-auto text-xs font-normal text-muted-foreground">
+            {ACHIEVEMENTS.filter(a => a.earned).length}/{ACHIEVEMENTS.length} earned
+          </span>
+        </h2>
+        <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-12 gap-2">
+          {ACHIEVEMENTS.map((a) => {
+            const Icon = a.icon;
+            return (
+              <div key={a.label} title={a.label}
+                className={`flex flex-col items-center gap-1 p-2 rounded-lg border text-center transition-all ${a.earned ? "bg-primary/5 border-primary/20" : "bg-muted/20 border-border/30 opacity-40"}`}>
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center ${a.earned ? "bg-primary/10" : "bg-muted"}`}>
+                  <Icon className={`w-3.5 h-3.5 ${a.earned ? "text-primary" : "text-muted-foreground"}`} />
+                </div>
+                <span className="text-[9px] font-medium leading-tight">{a.label}</span>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Reports */}

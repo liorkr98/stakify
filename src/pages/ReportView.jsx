@@ -146,8 +146,8 @@ export default function ReportView() {
         )}
       </div>
 
-      {/* Fact Checker */}
-      <FactChecker reportContent={FULL_CONTENT} />
+      {/* Fact Checker — only for free or already-paid reports */}
+      <FactChecker reportContent={FULL_CONTENT} isAccessible={!report.isPremium || isPaid} />
 
       {/* Comments */}
       <CommentsSection />

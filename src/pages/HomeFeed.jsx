@@ -4,12 +4,24 @@ import ReportCard from "@/components/feed/ReportCard";
 import Leaderboard from "@/components/feed/Leaderboard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Flame, Clock, UserPlus, Compass } from "lucide-react";
+import { TrendingUp, Flame, Clock, UserPlus, Compass, SlidersHorizontal, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+
+const INDUSTRIES = ["AI & Semiconductors", "Big Tech", "EV & Clean Energy", "Financials", "Consumer Tech", "Crypto & Web3", "E-Commerce", "Healthcare", "Options Flow"];
+const MARKET_CAPS = [
+  { key: "mega", label: "Mega Cap" },
+  { key: "large", label: "Large Cap" },
+  { key: "mid", label: "Mid Cap" },
+  { key: "small", label: "Small Cap" },
+  { key: "micro", label: "Micro Cap" },
+];
 
 export default function HomeFeed() {
   const [activeTab, setActiveTab] = useState("trending");
   const [following, setFollowing] = useState({});
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterIndustry, setFilterIndustry] = useState(null);
+  const [filterCap, setFilterCap] = useState(null);
   const navigate = useNavigate();
 
   const toggleFollow = (analystId) => {
@@ -22,9 +34,15 @@ export default function HomeFeed() {
     { key: "discover", label: "Discover", icon: Compass },
   ];
 
-  const trendingReports = [...MOCK_REPORTS].sort((a, b) => b.likes - a.likes);
-  const latestReports = [...MOCK_REPORTS].sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
-  const discoverReports = MOCK_REPORTS.filter(r => !r.isPremium);
+  const applyFilters = (list) => list.filter(r =>
+    (!filterIndustry || r.industry === filterIndustry) &&
+    (!filterCap || r.marketCap === filterCap)
+  );
+
+  const trendingReports = applyFilters([...MOCK_REPORTS].sort((a, b) => b.likes - a.likes));
+  const latestReports = applyFilters([...MOCK_REPORTS].sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt)));
+  const discoverReports = applyFilters(MOCK_REPORTS.filter(r => !r.isPremium));
+  const hasFilters = filterIndustry || filterCap;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -42,7 +60,7 @@ export default function HomeFeed() {
         {/* Main Feed */}
         <div className="flex-1 min-w-0">
           {/* Feed Tabs */}
-          <div className="flex items-center gap-1 mb-6 border-b border-border/40 pb-3">
+          <div className="flex items-center gap-1 mb-3 border-b border-border/40 pb-3 flex-wrap">
             {TABS.map((tab) => {
               const Icon = tab.icon;
               return (
@@ -60,7 +78,49 @@ export default function HomeFeed() {
                 </button>
               );
             })}
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`ml-auto flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${showFilters || hasFilters ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary"}`}
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+              Filter
+              {hasFilters && <span className="w-1.5 h-1.5 rounded-full bg-primary" />}
+            </button>
           </div>
+
+          {/* Filter Panel */}
+          {showFilters && (
+            <div className="mb-5 p-4 bg-secondary/40 border border-border/60 rounded-xl space-y-3">
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Industry</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {INDUSTRIES.map((ind) => (
+                    <button key={ind} onClick={() => setFilterIndustry(filterIndustry === ind ? null : ind)}
+                      className={`text-xs px-2.5 py-1 rounded-full border transition-all ${filterIndustry === ind ? "bg-primary text-white border-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}>
+                      {ind}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Market Cap</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {MARKET_CAPS.map((cap) => (
+                    <button key={cap.key} onClick={() => setFilterCap(filterCap === cap.key ? null : cap.key)}
+                      className={`text-xs px-2.5 py-1 rounded-full border transition-all ${filterCap === cap.key ? "bg-primary text-white border-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}>
+                      {cap.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {hasFilters && (
+                <button onClick={() => { setFilterIndustry(null); setFilterCap(null); }} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+                  <X className="w-3 h-3" /> Clear filters
+                </button>
+              )}
+            </div>
+          )}
+
 
           {/* Reports */}
           {activeTab !== "discover" ? (
