@@ -26,6 +26,7 @@ import CookiePolicyPage from '@/pages/CookiePolicyPage';
 import AccessibilityPage from '@/pages/AccessibilityPage';
 import AnalystProfilePage from '@/pages/AnalystProfilePage';
 import DMPage from '@/pages/DMPage';
+import StockPage from '@/pages/StockPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -68,6 +69,7 @@ const AuthenticatedApp = () => {
         <Route path="/accessibility" element={<AccessibilityPage />} />
         <Route path="/analyst" element={<AnalystProfilePage />} />
         <Route path="/dm" element={<DMPage />} />
+        <Route path="/stock" element={<StockPage />} />
       </Route>
       <Route path="/pay" element={<PaymentPage />} />
       <Route path="*" element={<PageNotFound />} />

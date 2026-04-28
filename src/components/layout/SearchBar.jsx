@@ -59,7 +59,7 @@ export default function SearchBar() {
               {stockResults.map(([ticker, data]) => (
                 <button
                   key={ticker}
-                  onClick={() => { setQuery(""); setOpen(false); }}
+                  onClick={() => { navigate(`/stock?ticker=${ticker}`); setQuery(""); setOpen(false); }}
                   className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-secondary transition-colors text-left"
                 >
                   <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -84,7 +84,7 @@ export default function SearchBar() {
               {analystResults.map((analyst) => (
                 <button
                   key={analyst.id}
-                  onClick={() => { navigate("/dashboard"); setQuery(""); setOpen(false); }}
+                  onClick={() => { navigate(`/analyst?id=${analyst.id}`); setQuery(""); setOpen(false); }}
                   className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-secondary transition-colors text-left"
                 >
                   <img src={analyst.avatar} alt={analyst.name} className="w-7 h-7 rounded-full object-cover" />

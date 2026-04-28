@@ -54,11 +54,15 @@ const PROMOTE_PACKAGES = [
   { label: "Campaign", price: 149, desc: "7-day promotion + email blast", icon: "📣" },
 ];
 
+const PROFILE_KEY = "stakify_profile";
+
 export default function AnalystDashboard() {
   const [tab, setTab] = useState("published");
   const [promoteReport, setPromoteReport] = useState(null);
   const navigate = useNavigate();
-  const analyst = MOCK_ANALYSTS[0];
+  const baseAnalyst = MOCK_ANALYSTS[0];
+  const saved = (() => { try { return JSON.parse(localStorage.getItem(PROFILE_KEY)) || {}; } catch { return {}; } })();
+  const analyst = { ...baseAnalyst, ...saved };
 
   const drafts = [
     { id: "d1", title: "Amazon's Healthcare Pivot: Underappreciated Opportunity", updatedAt: "2026-04-14" },
