@@ -118,11 +118,9 @@ export default function FactChecker({ reportContent }) {
                     {cfg.label}
                   </span>
                 </div>
-                {(item.type === "opinion" || item.type === "misleading") && (
-                  <div className="ml-7 mt-1">
-                    <CommunityNotes claimText={item.claim} />
-                  </div>
-                )}
+                <div className="ml-7 mt-1">
+                  <CommunityNotes claimText={item.claim} />
+                </div>
               </div>
             );
           })}

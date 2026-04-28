@@ -3,25 +3,8 @@ import { Users, ThumbsUp, ThumbsDown, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
-const MOCK_NOTES = [
-  {
-    id: 1,
-    text: "The 427% YoY data center revenue figure is accurate per NVIDIA's Q4 FY2026 earnings release, but it compares against a low base from the prior year when crypto demand collapsed.",
-    helpful: 84,
-    notHelpful: 6,
-    status: "helpful",
-  },
-  {
-    id: 2,
-    text: "AMD's MI300X GPU has shown comparable inference performance to H100 in several independent MLPerf benchmarks, making the claim that 'no competition can match NVIDIA' an overstatement.",
-    helpful: 61,
-    notHelpful: 12,
-    status: "helpful",
-  },
-];
-
 export default function CommunityNotes({ claimText }) {
-  const [notes, setNotes] = useState(MOCK_NOTES);
+  const [notes, setNotes] = useState([]);
   const [writing, setWriting] = useState(false);
   const [draft, setDraft] = useState("");
   const [voted, setVoted] = useState({});

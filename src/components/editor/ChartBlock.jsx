@@ -58,7 +58,7 @@ export default function ChartBlock() {
           Draw / Patterns
         </button>
       </div>
-      <div className="h-56">
+      <div className="relative h-56">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={data} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(222, 30%, 14%)" />
@@ -119,9 +119,12 @@ export default function ChartBlock() {
             />
           </ComposedChart>
         </ResponsiveContainer>
+        {showDrawing && (
+          <div className="absolute inset-0">
+            <DrawingCanvas height={224} />
+          </div>
+        )}
       </div>
-
-      {showDrawing && <DrawingCanvas height={180} />}
     </div>
   );
 }

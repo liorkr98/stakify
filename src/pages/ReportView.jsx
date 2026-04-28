@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Heart, Lock, Star, Rocket, MessageCircle } from "lucide-react";
+import { ArrowLeft, Heart, Lock, Star, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
@@ -98,7 +98,7 @@ export default function ReportView() {
 
       {/* Content */}
       <div className="mt-6 prose prose-sm max-w-none">
-        {isPaid ? (
+        {(!report.isPremium || isPaid) ? (
           <div className="space-y-4">
             {FULL_CONTENT.split("\n\n").map((para, i) => (
               <p key={i} className="text-foreground/85 leading-relaxed text-base">
@@ -146,33 +146,8 @@ export default function ReportView() {
         )}
       </div>
 
-      {/* Boost Report CTA */}
-      <div className="mt-6 p-4 bg-gradient-to-r from-primary/5 to-transparent border border-primary/20 rounded-xl flex flex-col sm:flex-row items-start sm:items-center gap-3">
-        <div className="flex-1">
-          <p className="font-semibold text-sm flex items-center gap-2">
-            <Rocket className="w-4 h-4 text-primary" />
-            Boost this report
-          </p>
-          <p className="text-xs text-muted-foreground mt-0.5">Increase visibility — get featured in the feed, homepage, or via email blast.</p>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          <Button size="sm" variant="outline" className="text-xs border-primary/30 text-primary hover:bg-primary/10"
-            onClick={() => navigate(`/pay?mode=promote&report=${report.id}&package=boost`)}>
-            🚀 Boost $19
-          </Button>
-          <Button size="sm" variant="outline" className="text-xs border-primary/30 text-primary hover:bg-primary/10"
-            onClick={() => navigate(`/pay?mode=promote&report=${report.id}&package=spotlight`)}>
-            ⭐ Spotlight $49
-          </Button>
-          <Button size="sm" variant="outline" className="text-xs border-primary/30 text-primary hover:bg-primary/10"
-            onClick={() => navigate(`/pay?mode=promote&report=${report.id}&package=campaign`)}>
-            📣 Campaign $149
-          </Button>
-        </div>
-      </div>
-
       {/* Fact Checker */}
-      <FactChecker reportContent={isPaid ? FULL_CONTENT : null} />
+      <FactChecker reportContent={FULL_CONTENT} />
 
       {/* Comments */}
       <CommentsSection />

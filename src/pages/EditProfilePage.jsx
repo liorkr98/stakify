@@ -66,7 +66,7 @@ export default function EditProfilePage() {
     setUploading(false);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     toast.success("Profile saved!");
     navigate("/dashboard");
   };
