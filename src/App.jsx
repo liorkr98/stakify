@@ -10,6 +10,8 @@ import AppLayout from '@/components/layout/AppLayout';
 import HomeFeed from '@/pages/HomeFeed';
 import ReportEditor from '@/pages/ReportEditor';
 import AnalystDashboard from '@/pages/AnalystDashboard';
+import ReportView from '@/pages/ReportView';
+import PaymentPage from '@/pages/PaymentPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -37,7 +39,9 @@ const AuthenticatedApp = () => {
         <Route path="/" element={<HomeFeed />} />
         <Route path="/editor" element={<ReportEditor />} />
         <Route path="/dashboard" element={<AnalystDashboard />} />
+        <Route path="/report" element={<ReportView />} />
       </Route>
+      <Route path="/pay" element={<PaymentPage />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

@@ -1,20 +1,27 @@
 import React, { useState } from "react";
-import { Heart, MessageCircle, Share2 } from "lucide-react";
+import { Heart, MessageCircle } from "lucide-react";
 import { format } from "date-fns";
+import { useNavigate } from "react-router-dom";
 import TickerTag from "./TickerTag";
 import PredictionBadge from "./PredictionBadge";
+import ShareMenu from "./ShareMenu";
 
 export default function ReportCard({ report }) {
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(report.likes);
+  const navigate = useNavigate();
 
-  const handleLike = () => {
+  const handleLike = (e) => {
+    e.stopPropagation();
     setLiked(!liked);
     setLikeCount(prev => liked ? prev - 1 : prev + 1);
   };
 
   return (
-    <article className="bg-card border border-border/60 rounded-xl p-5 hover:border-border transition-all duration-300">
+    <article
+      className="bg-card border border-border/60 rounded-xl p-5 hover:border-border hover:shadow-sm transition-all duration-200 cursor-pointer"
+      onClick={() => navigate(`/report?id=${report.id}`)}
+    >
       {/* Author Header */}
       <div className="flex items-center gap-3 mb-4">
         <img
@@ -46,7 +53,7 @@ export default function ReportCard({ report }) {
       </p>
 
       {/* Tickers */}
-      <div className="flex flex-wrap gap-2 mb-4">
+      <div className="flex flex-wrap gap-2 mb-4" onClick={(e) => e.stopPropagation()}>
         {report.tickers.map((t) => (
           <TickerTag key={t} ticker={t} />
         ))}
@@ -56,22 +63,22 @@ export default function ReportCard({ report }) {
       <PredictionBadge prediction={report.prediction} />
 
       {/* Actions */}
-      <div className="flex items-center gap-6 mt-4 pt-3 border-t border-border/40">
+      <div className="flex items-center gap-6 mt-4 pt-3 border-t border-border/40" onClick={(e) => e.stopPropagation()}>
         <button
           onClick={handleLike}
-          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-loss transition-colors"
+          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-red-500 transition-colors"
         >
-          <Heart className={`w-4 h-4 ${liked ? "fill-loss text-loss" : ""}`} />
+          <Heart className={`w-4 h-4 ${liked ? "fill-red-500 text-red-500" : ""}`} />
           <span>{likeCount}</span>
         </button>
-        <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+        <button
+          onClick={() => navigate(`/report?id=${report.id}#comments`)}
+          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
           <MessageCircle className="w-4 h-4" />
           <span>Reply</span>
         </button>
-        <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-          <Share2 className="w-4 h-4" />
-          <span>Share</span>
-        </button>
+        <ShareMenu title={report.title} reportId={report.id} />
       </div>
     </article>
   );
