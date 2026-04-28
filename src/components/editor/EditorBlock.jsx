@@ -1,4 +1,4 @@
-import React, { useRef, useCallback } from "react";
+import React, { useRef, useCallback, useEffect } from "react";
 import { Grip, Trash2 } from "lucide-react";
 import TickerWidget from "./TickerWidget";
 import { MOCK_STOCKS } from "@/lib/mockData";
@@ -18,6 +18,13 @@ function renderTextWithTickers(text) {
 
 export default function EditorBlock({ block, index, onChange, onDelete, onKeyDown }) {
   const ref = useRef(null);
+
+  // Sync content into DOM when block.content changes externally (template injection)
+  useEffect(() => {
+    if (ref.current && ref.current.innerText !== block.content) {
+      ref.current.innerText = block.content || "";
+    }
+  }, [block.content]);
 
   const handleInput = useCallback(() => {
     if (ref.current) {

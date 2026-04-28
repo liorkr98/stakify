@@ -2,7 +2,8 @@ import React, { useState, useMemo } from "react";
 import { generateCandlestickData, MOCK_STOCKS } from "@/lib/mockData";
 import { ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line } from "recharts";
 import { Input } from "@/components/ui/input";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, PenLine } from "lucide-react";
+import DrawingCanvas from "./DrawingCanvas";
 
 const CustomCandle = (props) => {
   const { x, y, width, height, payload } = props;
@@ -18,6 +19,7 @@ const CustomCandle = (props) => {
 
 export default function ChartBlock() {
   const [ticker, setTicker] = useState("AAPL");
+  const [showDrawing, setShowDrawing] = useState(false);
 
   const data = useMemo(() => {
     const raw = generateCandlestickData(ticker, 40);
@@ -48,8 +50,15 @@ export default function ChartBlock() {
             ${stock.price.toFixed(2)}
           </span>
         )}
+        <button
+          onClick={() => setShowDrawing(!showDrawing)}
+          className={`ml-auto flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg border transition-all ${showDrawing ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
+        >
+          <PenLine className="w-3 h-3" />
+          Draw / Patterns
+        </button>
       </div>
-      <div className="h-64">
+      <div className="h-56">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={data} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(222, 30%, 14%)" />
@@ -111,6 +120,8 @@ export default function ChartBlock() {
           </ComposedChart>
         </ResponsiveContainer>
       </div>
+
+      {showDrawing && <DrawingCanvas height={180} />}
     </div>
   );
 }

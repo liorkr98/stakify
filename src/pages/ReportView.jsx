@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Heart, Lock, Star } from "lucide-react";
+import { ArrowLeft, Heart, Lock, Star, Rocket, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
@@ -58,19 +58,32 @@ export default function ReportView() {
 
         {/* Author */}
         <div className="flex items-center gap-3 py-4 border-y border-border">
-          <img src={report.author.avatar} alt={report.author.name} className="w-10 h-10 rounded-full object-cover" />
+          <button onClick={() => navigate(`/analyst?id=${report.author.id}`)}>
+            <img src={report.author.avatar} alt={report.author.name} className="w-10 h-10 rounded-full object-cover hover:ring-2 hover:ring-primary/50 transition-all" />
+          </button>
           <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-sm">{report.author.name}</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button onClick={() => navigate(`/analyst?id=${report.author.id}`)} className="font-semibold text-sm hover:text-primary transition-colors">
+                {report.author.name}
+              </button>
               <Badge className="bg-primary/10 text-primary border-primary/20 text-xs">
-                {report.author.accuracy}% Accuracy
+                {report.author.accuracy}% Acc.
               </Badge>
+              <button
+                onClick={() => navigate(`/dm?analyst=${report.author.id}`)}
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors border border-border/60 rounded-full px-2 py-0.5 hover:border-primary/30"
+                title="DM this analyst (subscribers only)"
+              >
+                <MessageCircle className="w-3 h-3" />
+                Message
+                <Lock className="w-2.5 h-2.5 ml-0.5 opacity-60" />
+              </button>
             </div>
             <span className="text-xs text-muted-foreground">
               {format(new Date(report.publishedAt), "MMMM d, yyyy · h:mm a")}
             </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button onClick={handleLike} className={`flex items-center gap-1.5 text-sm transition-colors ${liked ? "text-red-500" : "text-muted-foreground hover:text-red-400"}`}>
               <Heart className={`w-4 h-4 ${liked ? "fill-red-500" : ""}`} />
               {likeCount}
@@ -131,6 +144,31 @@ export default function ReportView() {
             </div>
           </>
         )}
+      </div>
+
+      {/* Boost Report CTA */}
+      <div className="mt-6 p-4 bg-gradient-to-r from-primary/5 to-transparent border border-primary/20 rounded-xl flex flex-col sm:flex-row items-start sm:items-center gap-3">
+        <div className="flex-1">
+          <p className="font-semibold text-sm flex items-center gap-2">
+            <Rocket className="w-4 h-4 text-primary" />
+            Boost this report
+          </p>
+          <p className="text-xs text-muted-foreground mt-0.5">Increase visibility — get featured in the feed, homepage, or via email blast.</p>
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          <Button size="sm" variant="outline" className="text-xs border-primary/30 text-primary hover:bg-primary/10"
+            onClick={() => navigate(`/pay?mode=promote&report=${report.id}&package=boost`)}>
+            🚀 Boost $19
+          </Button>
+          <Button size="sm" variant="outline" className="text-xs border-primary/30 text-primary hover:bg-primary/10"
+            onClick={() => navigate(`/pay?mode=promote&report=${report.id}&package=spotlight`)}>
+            ⭐ Spotlight $49
+          </Button>
+          <Button size="sm" variant="outline" className="text-xs border-primary/30 text-primary hover:bg-primary/10"
+            onClick={() => navigate(`/pay?mode=promote&report=${report.id}&package=campaign`)}>
+            📣 Campaign $149
+          </Button>
+        </div>
       </div>
 
       {/* Fact Checker */}

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Plus, Type, List, BarChart3, ChevronDown, Image, AlertTriangle, Bold, Italic, Quote } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -15,7 +15,8 @@ const DYOR_TEXT = "⚠️ Disclaimer: This report is for informational purposes 
 
 export default function ReportEditor() {
   const [title, setTitle] = useState("");
-  const [blocks, setBlocks] = useState([{ type: "text", content: "" }]);
+  const [blocks, setBlocks] = useState([{ type: "text", content: "", id: 0 }]);
+  const nextId = React.useRef(1);
   const [showAI, setShowAI] = useState(false);
 
   const handleBlockChange = useCallback((index, newBlock) => {
@@ -30,25 +31,25 @@ export default function ReportEditor() {
     if (action === "enter") {
       setBlocks((prev) => {
         const newBlocks = [...prev];
-        newBlocks.splice(index + 1, 0, { type: "text", content: "" });
+        newBlocks.splice(index + 1, 0, { type: "text", content: "", id: nextId.current++ });
         return newBlocks;
       });
     }
   }, []);
 
   const addBlock = (type, content = "") => {
-    setBlocks((prev) => [...prev, { type, content }]);
+    setBlocks((prev) => [...prev, { type, content, id: nextId.current++ }]);
   };
 
   const addDYOR = () => {
-    setBlocks((prev) => [...prev, { type: "text", content: DYOR_TEXT }]);
-    toast.success("DYOR disclaimer added");
+    setBlocks((prev) => [...prev, { type: "text", content: DYOR_TEXT, id: nextId.current++ }]);
+    toast.success("DYOR disclaimer added to report");
   };
 
   const handleAIGenerate = (template) => {
     setTitle("Research Report: [Company Name]");
-    setBlocks(template);
-    toast.success("Report template generated!");
+    setBlocks(template.map((b) => ({ ...b, id: nextId.current++ })));
+    toast.success("Template loaded! All blocks are editable.");
   };
 
   const handlePublish = (prediction) => {
@@ -101,12 +102,12 @@ export default function ReportEditor() {
       <div className="space-y-2 min-h-[300px]">
         {blocks.map((block, index) =>
           block.type === "chart" ? (
-            <ChartBlock key={index} />
+            <ChartBlock key={block.id ?? index} />
           ) : block.type === "image" ? (
-            <ImageBlock key={index} onDelete={() => handleBlockDelete(index)} />
+            <ImageBlock key={block.id ?? index} onDelete={() => handleBlockDelete(index)} />
           ) : (
             <EditorBlock
-              key={index}
+              key={block.id ?? index}
               block={block}
               index={index}
               onChange={handleBlockChange}

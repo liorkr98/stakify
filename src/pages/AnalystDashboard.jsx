@@ -7,7 +7,7 @@ import {
   Target, TrendingUp, Award, FileText, Star, Flame,
   Trophy, Users, Zap, ArrowUp, ArrowDown, Minus,
   BookOpen, Rocket, Shield, CheckCircle, Clock, BarChart3,
-  Megaphone, ChevronRight
+  Megaphone, ChevronRight, MessageCircle
 } from "lucide-react";
 import { format } from "date-fns";
 import PredictionBadge from "@/components/feed/PredictionBadge";
@@ -76,7 +76,6 @@ export default function AnalystDashboard() {
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-1">
               <h1 className="text-2xl font-bold">{analyst.name}</h1>
-              <Badge className="bg-primary/10 text-primary border-primary/20 text-xs">Verified Analyst</Badge>
             </div>
             <p className="text-sm text-muted-foreground mb-3">
               Senior Equity Research Analyst · Specializing in Tech & AI · Based in San Francisco
@@ -196,12 +195,14 @@ export default function AnalystDashboard() {
         </div>
       </div>
 
-      {/* Reports */}
+      {/* Reports + Subscriptions + Purchases */}
       <div>
         <Tabs value={tab} onValueChange={setTab} className="mb-5">
-          <TabsList className="bg-secondary">
+          <TabsList className="bg-secondary flex-wrap h-auto">
             <TabsTrigger value="published">Published ({myReports.length})</TabsTrigger>
             <TabsTrigger value="drafts">Drafts ({drafts.length})</TabsTrigger>
+            <TabsTrigger value="subscriptions">Subscribed</TabsTrigger>
+            <TabsTrigger value="purchases">Purchased</TabsTrigger>
           </TabsList>
         </Tabs>
 
@@ -225,7 +226,7 @@ export default function AnalystDashboard() {
               </div>
             ))}
           </div>
-        ) : (
+        ) : tab === "drafts" ? (
           <div className="space-y-3">
             {drafts.map((draft) => (
               <div key={draft.id} className="bg-card border border-border/60 rounded-xl p-5 flex items-center justify-between">
@@ -234,6 +235,42 @@ export default function AnalystDashboard() {
                   <p className="text-xs text-muted-foreground mt-1">Last edited {format(new Date(draft.updatedAt), "MMM d, yyyy")}</p>
                 </div>
                 <Badge variant="outline" className="text-muted-foreground border-border">Draft</Badge>
+              </div>
+            ))}
+          </div>
+        ) : tab === "subscriptions" ? (
+          <div className="space-y-3">
+            {MOCK_ANALYSTS.slice(1, 4).map((a) => (
+              <div key={a.id} className="bg-card border border-border/60 rounded-xl p-4 flex items-center gap-4">
+                <button onClick={() => navigate(`/analyst?id=${a.id}`)}>
+                  <img src={a.avatar} alt={a.name} className="w-12 h-12 rounded-xl object-cover ring-1 ring-border hover:ring-primary/50 transition-all" />
+                </button>
+                <div className="flex-1 min-w-0">
+                  <button onClick={() => navigate(`/analyst?id=${a.id}`)} className="font-semibold hover:text-primary transition-colors">{a.name}</button>
+                  <p className="text-xs text-muted-foreground">{a.followers.toLocaleString()} followers · {a.accuracy}% accuracy</p>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {(a.specialties || []).slice(0, 2).map((s) => <Badge key={s} variant="outline" className="text-[10px] px-1.5 py-0">{s}</Badge>)}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" className="text-xs" onClick={() => navigate(`/dm?analyst=${a.id}`)}>
+                    <MessageCircle className="w-3 h-3 mr-1" /> DM
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs" onClick={() => navigate(`/analyst?id=${a.id}`)}>View</Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {MOCK_REPORTS.filter(r => r.isPremium).slice(0, 4).map((report) => (
+              <div key={report.id} className="bg-card border border-border/60 rounded-xl p-4 flex items-start gap-3 cursor-pointer hover:border-border transition-colors"
+                onClick={() => navigate(`/report?id=${report.id}&paid=true`)}>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm">{report.title}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">by {report.author.name} · ${report.price}</p>
+                </div>
+                <Badge className="bg-green-50 text-green-700 border-green-200 text-xs flex-shrink-0">Purchased</Badge>
               </div>
             ))}
           </div>

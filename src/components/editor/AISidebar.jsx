@@ -1,29 +1,57 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Sparkles, FileText, Loader2, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Sparkles, FileText, Loader2, X, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { base44 } from "@/api/base44Client";
 
 const SKELETON_TEMPLATE = [
   { type: "heading", content: "Executive Summary" },
   { type: "text", content: "This report examines the current market positioning and future outlook for the subject company. Our analysis suggests significant upside potential driven by key catalysts in the sector." },
   { type: "heading", content: "Market Analysis" },
   { type: "bullets", content: "• Revenue growth accelerating QoQ with 23% YoY increase\n• Market share expanding in core segments\n• Competitive moat strengthening through R&D investment\n• Favorable regulatory tailwinds expected in H2 2026" },
-  { type: "text", content: "The broader macro environment remains supportive with interest rate cuts anticipated and consumer spending holding steady across key demographics." },
   { type: "heading", content: "Valuation & Price Target" },
-  { type: "text", content: "Using a DCF model with a 10% discount rate and 5-year projection period, we arrive at a fair value that suggests meaningful upside from current levels. Our bull case scenario factors in accelerated adoption of AI-driven products." },
+  { type: "text", content: "Using a DCF model with a 10% discount rate and 5-year projection period, we arrive at a fair value that suggests meaningful upside from current levels." },
   { type: "heading", content: "Summary & Recommendation" },
   { type: "text", content: "Based on our comprehensive analysis, we believe the risk/reward profile is highly favorable at current prices. Key catalysts include upcoming earnings, product launches, and potential M&A activity." },
 ];
 
 export default function AISidebar({ isOpen, onClose, onGenerate }) {
   const [generating, setGenerating] = useState(false);
+  const [topic, setTopic] = useState("");
 
   const handleGenerate = async () => {
     setGenerating(true);
-    // Simulate AI generation delay
-    await new Promise((r) => setTimeout(r, 1500));
-    onGenerate(SKELETON_TEMPLATE);
+    try {
+      if (topic.trim()) {
+        const res = await base44.integrations.Core.InvokeLLM({
+          prompt: `You are a professional financial analyst. Write a structured research report template about: "${topic}". Generate sections with these block types: heading, text, bullets. Return a JSON array of blocks. Each block has "type" (heading/text/bullets) and "content" (string). For bullets, start each line with "• ". Include: Executive Summary, Market Analysis (with 4-5 bullet points), Key Catalysts, Risks, Valuation & Price Target, Summary & Recommendation. Make content specific to "${topic}".`,
+          response_json_schema: {
+            type: "object",
+            properties: {
+              blocks: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    type: { type: "string", enum: ["heading", "text", "bullets"] },
+                    content: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+        });
+        onGenerate(res.blocks || SKELETON_TEMPLATE);
+      } else {
+        await new Promise((r) => setTimeout(r, 800));
+        onGenerate(SKELETON_TEMPLATE);
+      }
+    } catch {
+      onGenerate(SKELETON_TEMPLATE);
+    }
     setGenerating(false);
+    onClose();
   };
 
   return (
@@ -39,7 +67,7 @@ export default function AISidebar({ isOpen, onClose, onGenerate }) {
           <div className="p-4 border-b border-border/40 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-accent" />
-              <span className="font-bold text-sm">AI Assistant</span>
+              <span className="font-bold text-sm">AI Template Generator</span>
             </div>
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
               <X className="w-4 h-4" />
@@ -50,11 +78,17 @@ export default function AISidebar({ isOpen, onClose, onGenerate }) {
             <div className="bg-secondary/50 rounded-lg p-4 border border-border/40">
               <div className="flex items-center gap-2 mb-2">
                 <FileText className="w-4 h-4 text-primary" />
-                <span className="text-sm font-semibold">Generative Skeleton</span>
+                <span className="text-sm font-semibold">Generate Template</span>
               </div>
               <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
-                Auto-fill the editor with a professional report template including Executive Summary, Market Analysis, and Recommendation sections.
+                Enter a company or topic for an AI-written template, or leave blank for a generic structure.
               </p>
+              <Input
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                placeholder="e.g. NVIDIA, Tesla, Bitcoin..."
+                className="mb-3 text-sm"
+              />
               <Button
                 onClick={handleGenerate}
                 disabled={generating}
@@ -64,23 +98,27 @@ export default function AISidebar({ isOpen, onClose, onGenerate }) {
                 {generating ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
-                    Generating...
+                    {topic ? "Writing with AI..." : "Loading template..."}
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-3.5 h-3.5 mr-2" />
-                    Generate Template
+                    {topic ? "Generate with AI" : "Use Generic Template"}
                   </>
                 )}
               </Button>
+              <p className="text-[10px] text-muted-foreground mt-2 text-center">
+                Generated content is fully editable in the editor.
+              </p>
             </div>
 
             <div className="text-[11px] text-muted-foreground p-3 bg-muted/30 rounded-lg border border-border/30">
               <p className="font-semibold mb-1">Tips:</p>
               <ul className="space-y-1">
-                <li>• Type <span className="font-mono text-primary">$TICKER</span> to add live stock data</li>
-                <li>• Use the chart block for visual analysis</li>
-                <li>• Fill the Prediction Block before publishing</li>
+                <li>• Type <span className="font-mono text-primary">$TICKER</span> to embed live stock data</li>
+                <li>• Use the chart block for visual technical analysis</li>
+                <li>• Add DYOR disclaimer before publishing</li>
+                <li>• Lock a price prediction to build credibility</li>
               </ul>
             </div>
           </div>

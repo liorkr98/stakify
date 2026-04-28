@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Camera, Save, Eye, Twitter, Globe, Linkedin } from "lucide-react";
+import { ArrowLeft, Camera, Save, Eye, Twitter, Globe, Linkedin, Loader2 } from "lucide-react";
+import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,6 +19,9 @@ export default function EditProfilePage() {
   const [tab, setTab] = useState("edit");
   const [name, setName] = useState(analyst.name);
   const [bio, setBio] = useState(analyst.bio || "");
+  const [avatar, setAvatar] = useState(analyst.avatar);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = React.useRef(null);
   const [twitter, setTwitter] = useState("@sarahchen_finance");
   const [linkedin, setLinkedin] = useState("sarahchen");
   const [website, setWebsite] = useState("sarahchen.com");
@@ -46,6 +50,20 @@ export default function EditProfilePage() {
     if (!tweet.trim()) return;
     setTweets((prev) => [{ id: Date.now(), content: tweet.trim(), time: "just now" }, ...prev]);
     setTweet("");
+  };
+
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setAvatar(file_url);
+      toast.success("Photo uploaded!");
+    } catch {
+      toast.error("Upload failed. Please try again.");
+    }
+    setUploading(false);
   };
 
   const handleSave = () => {
@@ -90,10 +108,21 @@ export default function EditProfilePage() {
             <h3 className="font-semibold mb-4">Branding</h3>
             <div className="flex items-center gap-5">
               <div className="relative">
-                <img src={analyst.avatar} alt={analyst.name} className="w-20 h-20 rounded-2xl object-cover ring-2 ring-border" />
-                <button className="absolute -bottom-1 -right-1 w-7 h-7 bg-primary rounded-full flex items-center justify-center text-white">
-                  <Camera className="w-3.5 h-3.5" />
+                <img src={avatar} alt={analyst.name} className="w-20 h-20 rounded-2xl object-cover ring-2 ring-border" />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="absolute -bottom-1 -right-1 w-7 h-7 bg-primary rounded-full flex items-center justify-center text-white hover:bg-primary/90 transition-colors"
+                >
+                  {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
                 </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  className="hidden"
+                />
               </div>
               <div className="flex-1 space-y-3">
                 <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Display Name" />
@@ -193,16 +222,29 @@ export default function EditProfilePage() {
           {/* Cover */}
           <div className="h-24 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent" />
           <div className="px-6 pb-6 -mt-10">
-            <img src={analyst.avatar} alt={analyst.name} className="w-20 h-20 rounded-2xl object-cover ring-4 ring-card mb-3" />
+            <img src={avatar} alt={analyst.name} className="w-20 h-20 rounded-2xl object-cover ring-4 ring-card mb-3" />
             <h2 className="text-xl font-bold">{name}</h2>
             <p className="text-sm text-muted-foreground mb-2">{tagline}</p>
             <div className="flex flex-wrap gap-2 mb-3">
               {selectedSpecialties.map((s) => <Badge key={s} variant="outline" className="text-xs">{s}</Badge>)}
             </div>
             <p className="text-sm text-foreground/80 mb-4">{bio}</p>
-            <div className="flex gap-3 text-xs text-muted-foreground mb-4">
-              {twitter && <span className="flex items-center gap-1"><Twitter className="w-3 h-3 text-sky-500" />{twitter}</span>}
-              {website && <span className="flex items-center gap-1"><Globe className="w-3 h-3" />{website}</span>}
+            <div className="flex gap-3 flex-wrap mb-4">
+              {twitter && (
+                <a href={`https://twitter.com/${twitter.replace("@","")}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-sky-500 hover:text-sky-600 transition-colors">
+                  <Twitter className="w-3 h-3" />{twitter}
+                </a>
+              )}
+              {linkedin && (
+                <a href={`https://linkedin.com/in/${linkedin}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 transition-colors">
+                  <Linkedin className="w-3 h-3" />{linkedin}
+                </a>
+              )}
+              {website && (
+                <a href={`https://${website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  <Globe className="w-3 h-3" />{website}
+                </a>
+              )}
             </div>
             <h3 className="font-semibold text-sm mb-3">Free Preview Reports</h3>
             <div className="space-y-3">

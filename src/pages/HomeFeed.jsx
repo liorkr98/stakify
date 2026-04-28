@@ -3,11 +3,14 @@ import { MOCK_REPORTS, MOCK_ANALYSTS } from "@/lib/mockData";
 import ReportCard from "@/components/feed/ReportCard";
 import Leaderboard from "@/components/feed/Leaderboard";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Flame, Clock, UserPlus } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { TrendingUp, Flame, Clock, UserPlus, Compass } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function HomeFeed() {
   const [activeTab, setActiveTab] = useState("trending");
   const [following, setFollowing] = useState({});
+  const navigate = useNavigate();
 
   const toggleFollow = (analystId) => {
     setFollowing((prev) => ({ ...prev, [analystId]: !prev[analystId] }));
@@ -16,7 +19,12 @@ export default function HomeFeed() {
   const TABS = [
     { key: "trending", label: "Trending", icon: Flame },
     { key: "latest", label: "Latest", icon: Clock },
+    { key: "discover", label: "Discover", icon: Compass },
   ];
+
+  const trendingReports = [...MOCK_REPORTS].sort((a, b) => b.likes - a.likes);
+  const latestReports = [...MOCK_REPORTS].sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
+  const discoverReports = MOCK_REPORTS.filter(r => !r.isPremium);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -26,7 +34,7 @@ export default function HomeFeed() {
           Research <span className="text-primary">Feed</span>
         </h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Follow top analysts and track their verified predictions
+          Follow analysts and track their publicly locked predictions
         </p>
       </div>
 
@@ -55,11 +63,32 @@ export default function HomeFeed() {
           </div>
 
           {/* Reports */}
-          <div className="space-y-4">
-            {MOCK_REPORTS.map((report) => (
-              <ReportCard key={report.id} report={report} />
-            ))}
-          </div>
+          {activeTab !== "discover" ? (
+            <div className="space-y-4">
+              {(activeTab === "trending" ? trendingReports : latestReports).map((report) => (
+                <ReportCard key={report.id} report={report} />
+              ))}
+            </div>
+          ) : (
+            <div>
+              <p className="text-xs text-muted-foreground mb-4 font-medium uppercase tracking-wider">Free to read · All topics</p>
+              <div className="grid sm:grid-cols-2 gap-4 mb-8">
+                {discoverReports.map((report) => (
+                  <ReportCard key={report.id} report={report} compact />
+                ))}
+              </div>
+              <div className="bg-card border border-border/60 rounded-xl p-5">
+                <h3 className="font-bold text-sm mb-3 flex items-center gap-2"><Compass className="w-4 h-4 text-primary" /> Browse by Specialty</h3>
+                <div className="flex flex-wrap gap-2">
+                  {["AI & Semiconductors","Big Tech","EV & Clean Energy","Macro","Consumer Tech","Financials","Crypto & Web3","Healthcare","Options Flow"].map((tag) => (
+                    <Badge key={tag} variant="outline" className="cursor-pointer hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-colors text-xs py-1 px-3">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Sidebar */}
@@ -74,13 +103,15 @@ export default function HomeFeed() {
             <div className="divide-y divide-border/30">
               {MOCK_ANALYSTS.slice(0, 3).map((analyst) => (
                 <div key={analyst.id} className="px-5 py-3 flex items-center gap-3">
-                  <img
-                    src={analyst.avatar}
-                    alt={analyst.name}
-                    className="w-9 h-9 rounded-full object-cover ring-1 ring-border"
-                  />
+                  <button onClick={() => navigate(`/analyst?id=${analyst.id}`)}>
+                    <img
+                      src={analyst.avatar}
+                      alt={analyst.name}
+                      className="w-9 h-9 rounded-full object-cover ring-1 ring-border hover:ring-primary/40 transition-all"
+                    />
+                  </button>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate">{analyst.name}</p>
+                    <button onClick={() => navigate(`/analyst?id=${analyst.id}`)} className="text-sm font-semibold truncate hover:text-primary transition-colors block text-left">{analyst.name}</button>
                     <p className="text-xs text-muted-foreground">
                       {analyst.followers.toLocaleString()} followers
                     </p>

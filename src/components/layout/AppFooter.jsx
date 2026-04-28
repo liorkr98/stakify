@@ -41,7 +41,7 @@ export default function AppFooter() {
               </span>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
-              The platform for verified financial analysis with publicly locked, trackable predictions.
+              A platform for financial research with publicly locked, trackable predictions.
             </p>
             <p className="text-xs text-muted-foreground mt-3 max-w-xs">
               ⚠️ Not financial advice. All content is for informational purposes only.
