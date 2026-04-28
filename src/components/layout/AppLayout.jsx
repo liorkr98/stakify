@@ -2,6 +2,8 @@ import React from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { BarChart3, Home, PenLine, User, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import AppFooter from "./AppFooter";
+import SearchBar from "./SearchBar";
 
 const NAV_ITEMS = [
   { path: "/", label: "Feed", icon: Home },
@@ -13,13 +15,13 @@ export default function AppLayout() {
   const location = useLocation();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Top Navigation */}
       <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-16 gap-4">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-2.5">
+            <Link to="/" className="flex items-center gap-2.5 flex-shrink-0">
               <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
                 <TrendingUp className="w-4 h-4 text-primary" />
               </div>
@@ -27,6 +29,9 @@ export default function AppLayout() {
                 Stak<span className="text-primary">ify</span>
               </span>
             </Link>
+
+            {/* Search Bar */}
+            <SearchBar />
 
             {/* Desktop Nav */}
             <nav className="hidden md:flex items-center gap-1">
@@ -52,11 +57,11 @@ export default function AppLayout() {
             </nav>
 
             {/* Profile */}
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-secondary border border-border flex items-center justify-center">
+            <Link to="/edit-profile" className="flex-shrink-0">
+              <div className="w-8 h-8 rounded-full bg-secondary border border-border flex items-center justify-center hover:border-primary/30 transition-colors">
                 <User className="w-4 h-4 text-muted-foreground" />
               </div>
-            </div>
+            </Link>
           </div>
         </div>
       </header>
@@ -85,9 +90,14 @@ export default function AppLayout() {
       </nav>
 
       {/* Main Content */}
-      <main className="pb-20 md:pb-0">
+      <main className="pb-20 md:pb-0 flex-1">
         <Outlet />
       </main>
+
+      {/* Footer */}
+      <div className="hidden md:block">
+        <AppFooter />
+      </div>
     </div>
   );
 }

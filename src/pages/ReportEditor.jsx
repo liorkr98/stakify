@@ -1,20 +1,21 @@
 import React, { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Plus, Type, List, BarChart3, ChevronDown } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Sparkles, Plus, Type, List, BarChart3, ChevronDown, Image, AlertTriangle, Bold, Italic, Quote } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import EditorBlock from "@/components/editor/EditorBlock";
 import ChartBlock from "@/components/editor/ChartBlock";
+import ImageBlock from "@/components/editor/ImageBlock";
 import PredictionBlock from "@/components/editor/PredictionBlock";
 import AISidebar from "@/components/editor/AISidebar";
 import MonetizationPanel from "@/components/editor/MonetizationPanel";
 
+const DYOR_TEXT = "⚠️ Disclaimer: This report is for informational purposes only and does not constitute financial advice. Always do your own research (DYOR) before making any investment decisions. Past performance is not indicative of future results.";
+
 export default function ReportEditor() {
   const [title, setTitle] = useState("");
-  const [blocks, setBlocks] = useState([
-    { type: "text", content: "" },
-  ]);
+  const [blocks, setBlocks] = useState([{ type: "text", content: "" }]);
   const [showAI, setShowAI] = useState(false);
 
   const handleBlockChange = useCallback((index, newBlock) => {
@@ -35,8 +36,13 @@ export default function ReportEditor() {
     }
   }, []);
 
-  const addBlock = (type) => {
-    setBlocks((prev) => [...prev, { type, content: "" }]);
+  const addBlock = (type, content = "") => {
+    setBlocks((prev) => [...prev, { type, content }]);
+  };
+
+  const addDYOR = () => {
+    setBlocks((prev) => [...prev, { type: "text", content: DYOR_TEXT }]);
+    toast.success("DYOR disclaimer added");
   };
 
   const handleAIGenerate = (template) => {
@@ -54,22 +60,33 @@ export default function ReportEditor() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
       {/* Editor Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-8 gap-3">
         <div>
           <h1 className="text-2xl font-bold">Write Report</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Create data-driven research for your followers
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowAI(!showAI)}
-          className="border-primary/30 text-primary hover:bg-primary/10"
-        >
-          <Sparkles className="w-4 h-4 mr-2" />
-          AI Assist
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={addDYOR}
+            className="border-amber-300 text-amber-700 hover:bg-amber-50 hidden sm:flex"
+          >
+            <AlertTriangle className="w-3.5 h-3.5 mr-1.5" />
+            Add DYOR
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowAI(!showAI)}
+            className="border-primary/30 text-primary hover:bg-primary/10"
+          >
+            <Sparkles className="w-4 h-4 mr-2" />
+            AI Assist
+          </Button>
+        </div>
       </div>
 
       {/* Title Input */}
@@ -85,6 +102,8 @@ export default function ReportEditor() {
         {blocks.map((block, index) =>
           block.type === "chart" ? (
             <ChartBlock key={index} />
+          ) : block.type === "image" ? (
+            <ImageBlock key={index} onDelete={() => handleBlockDelete(index)} />
           ) : (
             <EditorBlock
               key={index}
@@ -98,15 +117,11 @@ export default function ReportEditor() {
         )}
       </div>
 
-      {/* Add Block */}
-      <div className="mt-4 flex items-center gap-2">
+      {/* Toolbar */}
+      <div className="mt-4 flex items-center gap-2 flex-wrap border-t border-border/40 pt-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground hover:text-foreground"
-            >
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
               <Plus className="w-4 h-4 mr-1" />
               Add Block
               <ChevronDown className="w-3 h-3 ml-1" />
@@ -114,23 +129,48 @@ export default function ReportEditor() {
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             <DropdownMenuItem onClick={() => addBlock("heading")}>
-              <Type className="w-4 h-4 mr-2" />
-              Heading
+              <Type className="w-4 h-4 mr-2" /> Heading
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => addBlock("text")}>
-              <Type className="w-4 h-4 mr-2 opacity-60" />
-              Text
+              <Type className="w-4 h-4 mr-2 opacity-60" /> Text
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => addBlock("bullets")}>
-              <List className="w-4 h-4 mr-2" />
-              Bullet List
+              <List className="w-4 h-4 mr-2" /> Bullet List
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => addBlock("quote")}>
+              <Quote className="w-4 h-4 mr-2" /> Quote
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => addBlock("chart")}>
-              <BarChart3 className="w-4 h-4 mr-2" />
-              Chart
+              <BarChart3 className="w-4 h-4 mr-2" /> Stock Chart
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => addBlock("image")}>
+              <Image className="w-4 h-4 mr-2" /> Image
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        {/* Quick actions */}
+        <div className="flex items-center gap-1 border-l border-border/40 pl-2">
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground" title="Bold"
+            onClick={() => addBlock("text", "**Bold text here**")}>
+            <Bold className="w-3.5 h-3.5" />
+          </Button>
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground" title="Quote"
+            onClick={() => addBlock("quote")}>
+            <Quote className="w-3.5 h-3.5" />
+          </Button>
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground" title="Image"
+            onClick={() => addBlock("image")}>
+            <Image className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+
+        {/* DYOR mobile */}
+        <Button variant="ghost" size="sm" onClick={addDYOR}
+          className="text-amber-600 hover:bg-amber-50 sm:hidden ml-auto">
+          <AlertTriangle className="w-3.5 h-3.5 mr-1" /> DYOR
+        </Button>
       </div>
 
       {/* Monetization */}

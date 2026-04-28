@@ -12,6 +12,11 @@ import ReportEditor from '@/pages/ReportEditor';
 import AnalystDashboard from '@/pages/AnalystDashboard';
 import ReportView from '@/pages/ReportView';
 import PaymentPage from '@/pages/PaymentPage';
+import AboutPage from '@/pages/AboutPage';
+import HowItWorksPage from '@/pages/HowItWorksPage';
+import CalculationsPage from '@/pages/CalculationsPage';
+import EditProfilePage from '@/pages/EditProfilePage';
+import AnalyticsPage from '@/pages/AnalyticsPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -40,6 +45,11 @@ const AuthenticatedApp = () => {
         <Route path="/editor" element={<ReportEditor />} />
         <Route path="/dashboard" element={<AnalystDashboard />} />
         <Route path="/report" element={<ReportView />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/how-it-works" element={<HowItWorksPage />} />
+        <Route path="/calculations" element={<CalculationsPage />} />
+        <Route path="/edit-profile" element={<EditProfilePage />} />
+        <Route path="/analytics" element={<AnalyticsPage />} />
       </Route>
       <Route path="/pay" element={<PaymentPage />} />
       <Route path="*" element={<PageNotFound />} />
