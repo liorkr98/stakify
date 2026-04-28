@@ -20,9 +20,10 @@ const MOCK_RESULT = [
 ];
 
 export default function FactChecker({ reportContent, isAccessible }) {
-  if (!isAccessible) return null;
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  if (!isAccessible) return null;
 
   const runFactCheck = async () => {
     setLoading(true);
