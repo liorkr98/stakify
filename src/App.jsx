@@ -17,6 +17,13 @@ import HowItWorksPage from '@/pages/HowItWorksPage';
 import CalculationsPage from '@/pages/CalculationsPage';
 import EditProfilePage from '@/pages/EditProfilePage';
 import AnalyticsPage from '@/pages/AnalyticsPage';
+import PricingPage from '@/pages/PricingPage';
+import FeaturesPage from '@/pages/FeaturesPage';
+import NewsroomPage from '@/pages/NewsroomPage';
+import TermsPage from '@/pages/TermsPage';
+import PrivacyPage from '@/pages/PrivacyPage';
+import CookiePolicyPage from '@/pages/CookiePolicyPage';
+import AccessibilityPage from '@/pages/AccessibilityPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -50,6 +57,13 @@ const AuthenticatedApp = () => {
         <Route path="/calculations" element={<CalculationsPage />} />
         <Route path="/edit-profile" element={<EditProfilePage />} />
         <Route path="/analytics" element={<AnalyticsPage />} />
+        <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/features" element={<FeaturesPage />} />
+        <Route path="/newsroom" element={<NewsroomPage />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/cookies" element={<CookiePolicyPage />} />
+        <Route path="/accessibility" element={<AccessibilityPage />} />
       </Route>
       <Route path="/pay" element={<PaymentPage />} />
       <Route path="*" element={<PageNotFound />} />

@@ -4,6 +4,7 @@ import { BarChart3, Home, PenLine, User, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import AppFooter from "./AppFooter";
 import SearchBar from "./SearchBar";
+import AIChatButton from "@/components/ai/AIChatButton";
 
 const NAV_ITEMS = [
   { path: "/", label: "Feed", icon: Home },
@@ -98,6 +99,9 @@ export default function AppLayout() {
       <div className="hidden md:block">
         <AppFooter />
       </div>
+
+      {/* AI Chat Button */}
+      <AIChatButton />
     </div>
   );
 }

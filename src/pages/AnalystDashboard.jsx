@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import PredictionBadge from "@/components/feed/PredictionBadge";
+import InsightsPanel from "@/components/dashboard/InsightsPanel";
+import TwitsPanel from "@/components/dashboard/TwitsPanel";
 import { useNavigate, Link } from "react-router-dom";
 
 const STAT_CARDS = [
@@ -66,7 +68,7 @@ export default function AnalystDashboard() {
   const myReports = MOCK_REPORTS.filter((r) => r.author.id === analyst.id);
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Profile Header */}
       <div className="bg-card border border-border/60 rounded-xl p-6 mb-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
@@ -114,6 +116,13 @@ export default function AnalystDashboard() {
           );
         })}
       </div>
+
+      {/* Insights */}
+      <InsightsPanel />
+
+      {/* Two-column layout: left = content, right = twits */}
+      <div className="flex flex-col lg:flex-row gap-8">
+      <div className="flex-1 min-w-0">
 
       {/* Achievements */}
       <div className="bg-card border border-border/60 rounded-xl p-6 mb-8">
@@ -230,6 +239,15 @@ export default function AnalystDashboard() {
           </div>
         )}
       </div>
+
+      </div>{/* end left col */}
+
+      {/* Right column: Twits */}
+      <div className="w-full lg:w-80 flex-shrink-0">
+        <TwitsPanel />
+      </div>
+
+      </div>{/* end two-col */}
     </div>
   );
 }

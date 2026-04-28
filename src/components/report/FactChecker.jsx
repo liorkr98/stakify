@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { ShieldCheck, Loader2, AlertTriangle, CheckCircle2, MessageSquareQuote, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
+import CommunityNotes from "./CommunityNotes";
 
 const LABEL_CONFIG = {
   fact: { label: "Verified Fact", icon: CheckCircle2, color: "text-green-600", bg: "bg-green-50 border-green-200" },
@@ -104,17 +105,24 @@ export default function FactChecker({ reportContent }) {
             const cfg = LABEL_CONFIG[item.type] || LABEL_CONFIG.unverified;
             const Icon = cfg.icon;
             return (
-              <div key={i} className="px-5 py-3 flex gap-3 items-start hover:bg-muted/30 transition-colors">
-                <span className={`mt-0.5 flex-shrink-0 ${cfg.color}`}>
-                  <Icon className="w-4 h-4" />
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">{item.claim}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{item.note}</p>
+              <div key={i} className={`px-5 py-3 hover:bg-muted/30 transition-colors ${item.type === "opinion" ? "bg-blue-50/30" : ""}`}>
+                <div className="flex gap-3 items-start">
+                  <span className={`mt-0.5 flex-shrink-0 ${cfg.color}`}>
+                    <Icon className="w-4 h-4" />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">{item.claim}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{item.note}</p>
+                  </div>
+                  <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border flex-shrink-0 ${cfg.bg} ${cfg.color}`}>
+                    {cfg.label}
+                  </span>
                 </div>
-                <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border flex-shrink-0 ${cfg.bg} ${cfg.color}`}>
-                  {cfg.label}
-                </span>
+                {(item.type === "opinion" || item.type === "misleading") && (
+                  <div className="ml-7 mt-1">
+                    <CommunityNotes claimText={item.claim} />
+                  </div>
+                )}
               </div>
             );
           })}
