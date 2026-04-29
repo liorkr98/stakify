@@ -27,6 +27,7 @@ import AccessibilityPage from '@/pages/AccessibilityPage';
 import AnalystProfilePage from '@/pages/AnalystProfilePage';
 import DMPage from '@/pages/DMPage';
 import StockPage from '@/pages/StockPage';
+import PredictionSummaryPage from '@/pages/PredictionSummaryPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -70,6 +71,7 @@ const AuthenticatedApp = () => {
         <Route path="/analyst" element={<AnalystProfilePage />} />
         <Route path="/dm" element={<DMPage />} />
         <Route path="/stock" element={<StockPage />} />
+        <Route path="/predictions" element={<PredictionSummaryPage />} />
       </Route>
       <Route path="/pay" element={<PaymentPage />} />
       <Route path="*" element={<PageNotFound />} />

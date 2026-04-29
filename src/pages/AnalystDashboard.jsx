@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { MOCK_ANALYSTS, MOCK_REPORTS } from "@/lib/mockData";
+import { MOCK_ANALYSTS, getReports } from "@/lib/mockData";
+const MOCK_REPORTS = getReports();
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,7 +8,7 @@ import {
   Target, TrendingUp, Award, FileText, Star, Flame,
   Trophy, Users, Zap, ArrowUp, ArrowDown, Minus,
   BookOpen, Rocket, Shield, CheckCircle, Clock, BarChart3,
-  Megaphone, ChevronRight, MessageCircle
+  Megaphone, ChevronRight, MessageCircle, ListChecks
 } from "lucide-react";
 import { format } from "date-fns";
 import PredictionBadge from "@/components/feed/PredictionBadge";
@@ -16,7 +17,7 @@ import TwitsPanel from "@/components/dashboard/TwitsPanel";
 import { useNavigate, Link } from "react-router-dom";
 
 const STAT_CARDS = [
-  { key: "accuracy", label: "Accuracy Score", value: "87.5%", icon: Target, color: "text-green-600", bg: "bg-green-50 border-green-200", sub: "+2.3% vs last quarter" },
+  { key: "predictions", label: "Prediction Summary", value: "87.5%", icon: ListChecks, color: "text-green-600", bg: "bg-green-50 border-green-200", sub: "+2.3% vs last quarter" },
   { key: "points", label: "Total Points", value: "8,750", icon: Zap, color: "text-amber-600", bg: "bg-amber-50 border-amber-200", sub: "Top 3% of analysts" },
   { key: "yield", label: "Yearly Yield", value: "+34.2%", icon: TrendingUp, color: "text-primary", bg: "bg-primary/10 border-primary/20", sub: "vs S&P 500: +12.1%" },
   { key: "followers", label: "Followers", value: "12,400", icon: Users, color: "text-blue-600", bg: "bg-blue-50 border-blue-200", sub: "+340 this month" },
@@ -103,7 +104,7 @@ export default function AnalystDashboard() {
           return (
             <button
               key={stat.label}
-              onClick={() => navigate(`/analytics?category=${stat.key}`)}
+              onClick={() => navigate(stat.key === "predictions" ? "/predictions" : `/analytics?category=${stat.key}`)}
               className={`rounded-xl border p-4 text-left hover:shadow-md transition-all group ${stat.bg}`}
             >
               <div className="flex items-center justify-between mb-2">

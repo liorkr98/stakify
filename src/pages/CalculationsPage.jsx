@@ -1,5 +1,5 @@
 import React from "react";
-import { Target, Lock, TrendingUp, Zap } from "lucide-react";
+import { Target, Lock, TrendingUp, Zap, ShieldCheck, CheckCircle2, MessageSquareQuote, AlertTriangle, Info } from "lucide-react";
 
 const SECTIONS = [
   {
@@ -90,6 +90,33 @@ export default function CalculationsPage() {
             </div>
           );
         })}
+      </div>
+
+      {/* AI Fact Checker Section */}
+      <div className="border rounded-2xl overflow-hidden mt-2">
+        <div className="flex items-center gap-3 px-6 py-4 border-b bg-violet-50 border-violet-200">
+          <ShieldCheck className="w-5 h-5 text-violet-600" />
+          <h2 className="font-bold text-lg text-violet-600">AI Fact Checker</h2>
+        </div>
+        <div className="bg-card divide-y divide-border">
+          {[
+            { label: "What it does", text: "The AI Fact Checker scans every claim in a report and classifies it into one of four categories — Fact, Opinion, Misleading, or Unverified — using large language models with access to financial data sources." },
+            { label: "Fact", text: "A verifiable, objective claim backed by publicly available data (e.g. earnings reports, official filings, audited financials). The AI cross-references statements with known data points.", icon: CheckCircle2, color: "text-green-600" },
+            { label: "Opinion", text: "A subjective view, forecast, or interpretation by the analyst. Opinions are not right or wrong — they reflect the analyst's judgment. Community Notes can be added to debate these.", icon: MessageSquareQuote, color: "text-blue-600" },
+            { label: "Misleading", text: "A claim that is technically true but omits important context, cherry-picks data, or creates a false impression. These are flagged with a warning and Community Notes are enabled.", icon: AlertTriangle, color: "text-red-600" },
+            { label: "Unverified", text: "A claim for which no primary source could be found. It may be correct but cannot be confirmed. Analysts are encouraged to cite sources for these claims.", icon: Info, color: "text-amber-600" },
+            { label: "Community Notes", text: "For Opinion and Misleading claims, readers can contribute Community Notes — short factual clarifications backed by evidence. Notes that receive enough upvotes are displayed under the claim." },
+            { label: "Important caveat", text: "The AI Fact Checker is a tool to aid critical thinking, not a final arbiter of truth. Models can make errors. Always verify claims independently before making investment decisions." },
+          ].map((item) => (
+            <div key={item.label} className="px-6 py-3.5 flex gap-4 items-start">
+              <div className="w-48 flex-shrink-0 flex items-center gap-1.5">
+                {item.icon && React.createElement(item.icon, { className: `w-3.5 h-3.5 ${item.color}` })}
+                <span className="text-sm font-semibold text-foreground">{item.label}</span>
+              </div>
+              <span className="text-sm text-muted-foreground leading-relaxed">{item.text}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="mt-8 bg-muted/50 border border-border rounded-xl p-5 text-center">

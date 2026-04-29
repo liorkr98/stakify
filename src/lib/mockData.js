@@ -116,6 +116,22 @@ export const MOCK_ANALYSTS = [
   },
 ];
 
+// Helper to get analyst with saved profile edits (browser-only)
+function getMergedAnalyst(analyst) {
+  if (analyst.id !== "a1" || typeof window === "undefined") return analyst;
+  try {
+    const saved = JSON.parse(localStorage.getItem("stakify_profile")) || {};
+    return { ...analyst, ...saved };
+  } catch { return analyst; }
+}
+
+export function getReports() {
+  return MOCK_REPORTS.map((r) => ({
+    ...r,
+    author: getMergedAnalyst(r.author),
+  }));
+}
+
 export const MOCK_REPORTS = [
   {
     id: "r1",

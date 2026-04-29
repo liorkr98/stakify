@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { MOCK_REPORTS, MOCK_ANALYSTS } from "@/lib/mockData";
+import { getReports, MOCK_ANALYSTS } from "@/lib/mockData";
+const MOCK_REPORTS = getReports();
 import ReportCard from "@/components/feed/ReportCard";
 import Leaderboard from "@/components/feed/Leaderboard";
 import { Button } from "@/components/ui/button";
