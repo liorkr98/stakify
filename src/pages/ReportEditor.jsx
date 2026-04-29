@@ -10,6 +10,7 @@ import ImageBlock from "@/components/editor/ImageBlock";
 import PredictionBlock from "@/components/editor/PredictionBlock";
 import AISidebar from "@/components/editor/AISidebar";
 import MonetizationPanel from "@/components/editor/MonetizationPanel";
+import FactChecker from "@/components/report/FactChecker";
 
 const DYOR_TEXT = "⚠️ Disclaimer: This report is for informational purposes only and does not constitute financial advice. Always do your own research (DYOR) before making any investment decisions. Past performance is not indicative of future results.";
 
@@ -176,6 +177,12 @@ export default function ReportEditor() {
 
       {/* Monetization */}
       <MonetizationPanel />
+
+      {/* Fact Checker */}
+      <FactChecker
+        reportContent={[title, ...blocks.map((b) => b.content)].filter(Boolean).join("\n\n")}
+        isAccessible={true}
+      />
 
       {/* Prediction Block */}
       <PredictionBlock onPublish={handlePublish} />

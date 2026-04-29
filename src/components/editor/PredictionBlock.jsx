@@ -8,22 +8,26 @@ import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function PredictionBlock({ onPublish }) {
+  const [mode, setMode] = useState("target"); // "target" | "typical"
   const [action, setAction] = useState("");
   const [ticker, setTicker] = useState("");
   const [targetPrice, setTargetPrice] = useState("");
   const [timeframe, setTimeframe] = useState("");
+  const [rationale, setRationale] = useState("");
   const [locked, setLocked] = useState(false);
   const [lockData, setLockData] = useState(null);
 
   const handlePublish = () => {
     const stock = MOCK_STOCKS[ticker.toUpperCase()];
-    const lockPrice = stock ? stock.price : parseFloat(targetPrice) * 0.9;
+    const lockPrice = stock ? stock.price : (targetPrice ? parseFloat(targetPrice) * 0.9 : null);
 
     const data = {
+      mode,
       action,
       ticker: ticker.toUpperCase(),
-      targetPrice: parseFloat(targetPrice),
+      targetPrice: mode === "target" ? parseFloat(targetPrice) : null,
       timeframe,
+      rationale,
       lockPrice,
       lockTime: new Date().toISOString(),
     };
@@ -33,7 +37,9 @@ export default function PredictionBlock({ onPublish }) {
     if (onPublish) onPublish(data);
   };
 
-  const isValid = action && ticker && targetPrice && timeframe;
+  const isValid = mode === "target"
+    ? action && ticker && targetPrice && timeframe
+    : action && ticker && timeframe;
 
   const ACTION_ICONS = { Long: ArrowUp, Short: ArrowDown, Hold: Minus };
   const ACTION_COLORS = {
@@ -62,6 +68,22 @@ export default function PredictionBlock({ onPublish }) {
             exit={{ opacity: 0 }}
             className="p-5"
           >
+            {/* Mode toggle */}
+            <div className="flex gap-2 mb-5">
+              <button
+                onClick={() => setMode("target")}
+                className={`flex-1 py-2 text-xs font-semibold rounded-lg border transition-all ${mode === "target" ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/30"}`}
+              >
+                🎯 Price Target
+              </button>
+              <button
+                onClick={() => setMode("typical")}
+                className={`flex-1 py-2 text-xs font-semibold rounded-lg border transition-all ${mode === "typical" ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/30"}`}
+              >
+                📊 Typical Stock (No Target)
+              </button>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
@@ -103,18 +125,32 @@ export default function PredictionBlock({ onPublish }) {
                 />
               </div>
 
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
-                  Target Price
-                </label>
-                <Input
-                  type="number"
-                  value={targetPrice}
-                  onChange={(e) => setTargetPrice(e.target.value)}
-                  placeholder="$0.00"
-                  className="font-mono bg-background border-border"
-                />
-              </div>
+              {mode === "target" ? (
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
+                    Target Price
+                  </label>
+                  <Input
+                    type="number"
+                    value={targetPrice}
+                    onChange={(e) => setTargetPrice(e.target.value)}
+                    placeholder="$0.00"
+                    className="font-mono bg-background border-border"
+                  />
+                </div>
+              ) : (
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
+                    Rationale (optional)
+                  </label>
+                  <Input
+                    value={rationale}
+                    onChange={(e) => setRationale(e.target.value)}
+                    placeholder="e.g. Undervalued relative to peers"
+                    className="bg-background border-border"
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
@@ -165,20 +201,29 @@ export default function PredictionBlock({ onPublish }) {
                   {lockData.action}
                 </div>
                 <span className="font-mono text-lg font-bold">${lockData.ticker}</span>
-                <span className="text-sm">
-                  Target: <span className="font-bold font-mono">${lockData.targetPrice}</span>
-                </span>
+                {lockData.mode === "target" ? (
+                  <span className="text-sm">
+                    Target: <span className="font-bold font-mono">${lockData.targetPrice}</span>
+                  </span>
+                ) : (
+                  <span className="text-xs font-semibold uppercase tracking-wide opacity-70">Typical Pick</span>
+                )}
                 <span className="text-sm">({lockData.timeframe})</span>
               </div>
+              {lockData.rationale && (
+                <p className="text-xs mt-2 opacity-80">{lockData.rationale}</p>
+              )}
 
               <div className="mt-3 flex items-center gap-4 text-xs opacity-80">
                 <span className="flex items-center gap-1">
                   <Clock className="w-3 h-3" />
                   {format(new Date(lockData.lockTime), "MMM d, yyyy · HH:mm:ss")}
                 </span>
-                <span>
-                  Entry Price: <span className="font-mono font-bold">${lockData.lockPrice.toFixed(2)}</span>
-                </span>
+                {lockData.lockPrice && (
+                  <span>
+                    Entry Price: <span className="font-mono font-bold">${lockData.lockPrice.toFixed(2)}</span>
+                  </span>
+                )}
               </div>
             </div>
           </motion.div>
