@@ -1,263 +1,278 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, TrendingUp, TrendingDown, BarChart3, FileText, Newspaper, Star, RefreshCw } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { ArrowLeft, TrendingUp, TrendingDown, Loader2, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { MOCK_STOCKS, MOCK_REPORTS, generateCandlestickData } from "@/lib/mockData";
+import { base44 } from "@/api/base44Client";
+import TradingViewWidget from "@/components/feed/TradingViewWidget";
+import ReportCard from "@/components/feed/ReportCard";
+import { XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 
-const TABS = ["Chart", "Fundamentals", "Financials", "News", "Reports"];
+const TABS = ["Chart", "Financials", "News", "Reports"];
 
-const FUNDAMENTALS = {
-  NVDA: { pe: 42.3, eps: 11.93, marketCap: "2.3T", divYield: "0.03%", beta: 1.72, week52High: 974, week52Low: 402, avgVolume: "42M" },
-  AAPL: { pe: 29.1, eps: 6.57, marketCap: "3.1T", divYield: "0.51%", beta: 1.24, week52High: 220, week52Low: 164, avgVolume: "62M" },
-  TSLA: { pe: 55.8, eps: 2.99, marketCap: "680B", divYield: "N/A", beta: 2.31, week52High: 299, week52Low: 138, avgVolume: "112M" },
-  MSFT: { pe: 35.4, eps: 13.1, marketCap: "3.0T", divYield: "0.72%", beta: 0.89, week52High: 468, week52Low: 366, avgVolume: "21M" },
-  GOOGL: { pe: 22.7, eps: 7.96, marketCap: "2.1T", divYield: "0.46%", beta: 1.04, week52High: 193, week52Low: 130, avgVolume: "25M" },
-  AMD:  { pe: 60.2, eps: 1.41, marketCap: "280B", divYield: "N/A", beta: 1.95, week52High: 227, week52Low: 122, avgVolume: "55M" },
+const TICKER_NAMES = {
+  NVDA: "NVIDIA Corporation", AAPL: "Apple Inc.", TSLA: "Tesla, Inc.",
+  MSFT: "Microsoft Corporation", GOOGL: "Alphabet Inc.", AMD: "Advanced Micro Devices",
+  META: "Meta Platforms", AMZN: "Amazon.com", NFLX: "Netflix", JPM: "JPMorgan Chase",
+  COIN: "Coinbase Global", PLTR: "Palantir Technologies", RIVN: "Rivian Automotive",
+  SHOP: "Shopify", ARM: "Arm Holdings", INTC: "Intel Corporation", AVGO: "Broadcom Inc.",
+  QCOM: "Qualcomm", BAC: "Bank of America", GS: "Goldman Sachs", MS: "Morgan Stanley",
+  WFC: "Wells Fargo", DIS: "Walt Disney", UBER: "Uber Technologies", LYFT: "Lyft",
+  SNOW: "Snowflake", CRWD: "CrowdStrike", NET: "Cloudflare", DDOG: "Datadog",
+  PANW: "Palo Alto Networks", ZM: "Zoom Video", SPOT: "Spotify", ABNB: "Airbnb",
+  PYPL: "PayPal", SQ: "Block Inc.", HOOD: "Robinhood", SOFI: "SoFi Technologies",
+  NIO: "NIO Inc.", XPEV: "XPeng", LI: "Li Auto", F: "Ford Motor", GM: "General Motors",
+  BA: "Boeing", CAT: "Caterpillar", XOM: "ExxonMobil", CVX: "Chevron",
+  JNJ: "Johnson & Johnson", PFE: "Pfizer", MRNA: "Moderna",
 };
 
-const FINANCIALS = {
-  NVDA: { revenue: "$88.6B", grossProfit: "$63.2B", netIncome: "$48.2B", operatingCF: "$51.4B", totalAssets: "$96.0B", totalDebt: "$8.5B" },
-  AAPL: { revenue: "$383B", grossProfit: "$170B", netIncome: "$97B", operatingCF: "$115B", totalAssets: "$352B", totalDebt: "$104B" },
-  TSLA: { revenue: "$97.7B", grossProfit: "$17.7B", netIncome: "$7.1B", operatingCF: "$14.6B", totalAssets: "$106B", totalDebt: "$7.6B" },
-  MSFT: { revenue: "$245B", grossProfit: "$171B", netIncome: "$86B", operatingCF: "$109B", totalAssets: "$512B", totalDebt: "$59.5B" },
-  GOOGL: { revenue: "$307B", grossProfit: "$175B", netIncome: "$73B", operatingCF: "$101B", totalAssets: "$402B", totalDebt: "$13.3B" },
-  AMD:  { revenue: "$22.7B", grossProfit: "$10.6B", netIncome: "$854M", operatingCF: "$1.7B", totalAssets: "$67.9B", totalDebt: "$1.7B" },
-};
-
-const MOCK_NEWS = [
-  { id: 1, title: "NVIDIA announces next-gen Blackwell Ultra architecture", source: "Reuters", time: "2h ago", sentiment: "positive" },
-  { id: 2, title: "AI chip demand expected to triple by 2027", source: "Bloomberg", time: "5h ago", sentiment: "positive" },
-  { id: 3, title: "Semiconductor export restrictions may impact Q2 guidance", source: "WSJ", time: "1d ago", sentiment: "negative" },
-  { id: 4, title: "Data center spending by hyperscalers hits record high", source: "CNBC", time: "1d ago", sentiment: "positive" },
-  { id: 5, title: "New competitor GPU benchmarks released", source: "TechCrunch", time: "2d ago", sentiment: "neutral" },
-];
-
-const RANGES = ["1W", "1M", "3M", "6M", "1Y"];
-
-function buildPriceHistory(basePrice, days) {
-  const data = [];
-  let price = basePrice * 0.75;
-  const now = new Date();
-  for (let i = days; i >= 0; i--) {
-    price = Math.max(price * (1 + (Math.random() - 0.47) * 0.025), basePrice * 0.5);
-    const d = new Date(now);
-    d.setDate(d.getDate() - i);
-    data.push({ date: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }), price: parseFloat(price.toFixed(2)) });
-  }
-  // make last point match current price
-  data[data.length - 1].price = basePrice;
-  return data;
+function fmt(n) {
+  if (n == null) return "N/A";
+  if (Math.abs(n) >= 1e12) return `$${(n / 1e12).toFixed(2)}T`;
+  if (Math.abs(n) >= 1e9) return `$${(n / 1e9).toFixed(2)}B`;
+  if (Math.abs(n) >= 1e6) return `$${(n / 1e6).toFixed(2)}M`;
+  return n.toLocaleString();
 }
 
-const rangeDays = { "1W": 7, "1M": 30, "3M": 90, "6M": 180, "1Y": 365 };
+// Resizable chart wrapper
+function ResizableChart({ ticker }) {
+  const [height, setHeight] = useState(600);
+  const [width, setWidth] = useState("100%");
+  const resizing = useRef(false);
+  const startY = useRef(0);
+  const startH = useRef(0);
+
+  const onMouseDown = useCallback((e) => {
+    resizing.current = true;
+    startY.current = e.clientY;
+    startH.current = height;
+    e.preventDefault();
+  }, [height]);
+
+  useEffect(() => {
+    const onMove = (e) => {
+      if (!resizing.current) return;
+      const delta = e.clientY - startY.current;
+      setHeight(Math.max(300, Math.min(1200, startH.current + delta)));
+    };
+    const onUp = () => { resizing.current = false; };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+  }, []);
+
+  return (
+    <div className="relative" style={{ width }}>
+      <TradingViewWidget ticker={ticker} height={height} />
+      {/* Vertical resize handle */}
+      <div
+        onMouseDown={onMouseDown}
+        className="absolute bottom-0 left-0 right-0 h-3 cursor-ns-resize flex items-center justify-center group z-10"
+      >
+        <div className="w-12 h-1 bg-border rounded-full group-hover:bg-primary/50 transition-colors" />
+      </div>
+    </div>
+  );
+}
 
 export default function StockPage() {
   const navigate = useNavigate();
   const urlParams = new URLSearchParams(window.location.search);
   const ticker = urlParams.get("ticker")?.toUpperCase() || "NVDA";
-
-  const stockData = MOCK_STOCKS[ticker];
   const [activeTab, setActiveTab] = useState("Chart");
-  const [range, setRange] = useState("3M");
+  const [stockData, setStockData] = useState(null);
+  const [fundamentals, setFundamentals] = useState(null);
+  const [news, setNews] = useState([]);
+  const [quarterly, setQuarterly] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [financialsLoading, setFinancialsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [reports, setReports] = useState([]);
 
-  const priceHistory = useMemo(() => buildPriceHistory(stockData?.price || 500, rangeDays[range]), [ticker, range]);
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    Promise.all([
+      base44.functions.invoke("getStockData", { ticker, range: "1d", interval: "5m" }),
+      base44.entities.Report.filter({ status: "published" }),
+    ]).then(([stockRes, allReports]) => {
+      setStockData(stockRes.data);
+      setReports((allReports || []).filter(r => (r.tickers || []).includes(ticker)));
+    }).catch(e => setError(e.message))
+      .finally(() => setLoading(false));
+  }, [ticker]);
 
-  const fundamentals = FUNDAMENTALS[ticker] || FUNDAMENTALS.NVDA;
-  const financials = FINANCIALS[ticker] || FINANCIALS.NVDA;
+  const loadFinancials = async () => {
+    if (fundamentals) return;
+    setFinancialsLoading(true);
+    const res = await base44.functions.invoke("getStockFinancials", { ticker });
+    setFundamentals(res.data.financials);
+    setNews(res.data.news || []);
+    setQuarterly(res.data.quarterly || []);
+    setFinancialsLoading(false);
+  };
 
-  const relatedReports = MOCK_REPORTS.filter((r) =>
-    r.tickers?.includes(ticker) || r.prediction_ticker === ticker
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    if (tab === "Financials" || tab === "News") loadFinancials();
+  };
+
+  if (loading) return (
+    <div className="max-w-5xl mx-auto px-4 py-12 flex items-center justify-center gap-3 text-muted-foreground">
+      <Loader2 className="w-5 h-5 animate-spin" /> Loading {ticker}...
+    </div>
   );
 
-  const isUp = stockData?.changePercent >= 0;
-  const chartColor = isUp ? "hsl(152,55%,38%)" : "hsl(0,72%,52%)";
+  if (error || !stockData) return (
+    <div className="max-w-5xl mx-auto px-4 py-12 text-center">
+      <p className="text-muted-foreground mb-4">{error || `Data for "${ticker}" not found.`}</p>
+      <button onClick={() => navigate(-1)} className="text-primary hover:underline">Go Back</button>
+    </div>
+  );
 
-  if (!stockData) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 py-16 text-center">
-        <p className="text-muted-foreground">Stock "{ticker}" not found.</p>
-        <Button className="mt-4" onClick={() => navigate(-1)}>Go Back</Button>
-      </div>
-    );
-  }
+  const price = stockData.regularMarketPrice;
+  const prevClose = stockData.previousClose;
+  const change = price - prevClose;
+  const changePct = (change / prevClose) * 100;
+  const isUp = change >= 0;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-      {/* Back */}
+    <div className="max-w-5xl mx-auto px-4 py-6">
       <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
         <ArrowLeft className="w-4 h-4" /> Back
       </button>
 
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 mb-6 flex-wrap">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-            <TrendingUp className="w-7 h-7 text-primary" />
-          </div>
+      {/* Header card */}
+      <div className="bg-card border border-border rounded-2xl p-5 mb-4">
+        <div className="flex items-start justify-between">
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-3xl font-bold font-mono">{ticker}</h1>
-              <Badge variant="outline" className="text-xs">NASDAQ</Badge>
+            <div className="flex items-center gap-2 mb-1">
+              <h1 className="text-2xl font-bold">{ticker}</h1>
+              <Badge variant="secondary" className="text-[10px]">{stockData.exchangeName || "NASDAQ"}</Badge>
             </div>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {ticker === "NVDA" ? "NVIDIA Corporation" : ticker === "AAPL" ? "Apple Inc." : ticker === "TSLA" ? "Tesla Inc." : ticker === "MSFT" ? "Microsoft Corporation" : ticker === "GOOGL" ? "Alphabet Inc." : ticker === "AMD" ? "Advanced Micro Devices" : ticker + " Inc."}
-            </p>
+            <p className="text-sm text-muted-foreground">{TICKER_NAMES[ticker] || ticker}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-3xl font-bold">${price?.toFixed(2)}</p>
+            <div className={`flex items-center justify-end gap-1 text-sm font-semibold ${isUp ? "text-gain" : "text-loss"}`}>
+              {isUp ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+              {isUp ? "+" : ""}{change.toFixed(2)} ({isUp ? "+" : ""}{changePct.toFixed(2)}%)
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">Prev close: ${prevClose?.toFixed(2)}</p>
           </div>
         </div>
-        <div className="text-right">
-          <p className="text-3xl font-bold font-mono">${stockData.price.toFixed(2)}</p>
-          <div className={`flex items-center justify-end gap-1 mt-1 ${isUp ? "text-gain" : "text-loss"}`}>
-            {isUp ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-            <span className="font-semibold">{isUp ? "+" : ""}{stockData.change?.toFixed(2) || "0.00"} ({isUp ? "+" : ""}{stockData.changePercent.toFixed(2)}%)</span>
+        <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-border">
+          <div>
+            <p className="text-xs text-muted-foreground">52W High</p>
+            <p className="text-sm font-semibold">${stockData.fiftyTwoWeekHigh?.toFixed(2) ?? "N/A"}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">52W Low</p>
+            <p className="text-sm font-semibold">${stockData.fiftyTwoWeekLow?.toFixed(2) ?? "N/A"}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Volume</p>
+            <p className="text-sm font-semibold">{fmt(stockData.volume)}</p>
           </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 border-b border-border/40 pb-3 overflow-x-auto">
-        {TABS.map((t) => (
-          <button key={t} onClick={() => setActiveTab(t)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${activeTab === t ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary"}`}>
+      <div className="flex gap-1 mb-4 bg-secondary rounded-xl p-1">
+        {TABS.map(t => (
+          <button key={t} onClick={() => handleTabChange(t)}
+            className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${activeTab === t ? "bg-card text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
             {t}
           </button>
         ))}
       </div>
 
-      {/* Chart Tab */}
-      {activeTab === "Chart" && (
-        <div className="bg-card border border-border rounded-xl p-5">
-          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-            <div>
-              <p className="text-sm font-semibold">Price History</p>
-              <p className="text-xs text-muted-foreground">All values in USD</p>
-            </div>
-            <div className="flex gap-1">
-              {RANGES.map((r) => (
-                <button key={r} onClick={() => setRange(r)}
-                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${range === r ? "bg-primary text-white" : "text-muted-foreground hover:bg-secondary"}`}>
-                  {r}
-                </button>
-              ))}
-            </div>
-          </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={priceHistory}>
-              <defs>
-                <linearGradient id="stockGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={chartColor} stopOpacity={0.2} />
-                  <stop offset="95%" stopColor={chartColor} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.4} />
-              <XAxis dataKey="date" tick={{ fontSize: 10 }} tickLine={false} axisLine={false}
-                interval={Math.floor(priceHistory.length / 6)} />
-              <YAxis domain={["auto", "auto"]} tick={{ fontSize: 10 }} tickLine={false} axisLine={false}
-                tickFormatter={(v) => `$${v}`} width={60} />
-              <Tooltip formatter={(v) => [`$${v}`, "Price"]} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-              <Area type="monotone" dataKey="price" stroke={chartColor} strokeWidth={2} fill="url(#stockGrad)" dot={false} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      )}
+      {activeTab === "Chart" && <ResizableChart ticker={ticker} />}
 
-      {/* Fundamentals Tab */}
-      {activeTab === "Fundamentals" && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {[
-            { label: "P/E Ratio", value: fundamentals.pe },
-            { label: "EPS (TTM)", value: `$${fundamentals.eps}` },
-            { label: "Market Cap", value: fundamentals.marketCap },
-            { label: "Dividend Yield", value: fundamentals.divYield },
-            { label: "Beta", value: fundamentals.beta },
-            { label: "52W High", value: `$${fundamentals.week52High}` },
-            { label: "52W Low", value: `$${fundamentals.week52Low}` },
-            { label: "Avg Volume", value: fundamentals.avgVolume },
-          ].map((item) => (
-            <div key={item.label} className="bg-card border border-border rounded-xl p-4">
-              <p className="text-xs text-muted-foreground mb-1">{item.label}</p>
-              <p className="text-lg font-bold font-mono">{item.value}</p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Financials Tab */}
       {activeTab === "Financials" && (
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-border/40">
-            <p className="font-semibold">Annual Financials (TTM)</p>
-            <p className="text-xs text-muted-foreground">Trailing twelve months</p>
-          </div>
-          <div className="divide-y divide-border/40">
-            {[
-              { label: "Revenue", value: financials.revenue, icon: "💰" },
-              { label: "Gross Profit", value: financials.grossProfit, icon: "📈" },
-              { label: "Net Income", value: financials.netIncome, icon: "✅" },
-              { label: "Operating Cash Flow", value: financials.operatingCF, icon: "🔄" },
-              { label: "Total Assets", value: financials.totalAssets, icon: "🏦" },
-              { label: "Total Debt", value: financials.totalDebt, icon: "📉" },
-            ].map((row) => (
-              <div key={row.label} className="flex items-center justify-between px-5 py-3.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-base">{row.icon}</span>
-                  <span className="text-sm text-muted-foreground">{row.label}</span>
-                </div>
-                <span className="font-bold font-mono">{row.value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* News Tab */}
-      {activeTab === "News" && (
-        <div className="space-y-3">
-          {MOCK_NEWS.map((item) => (
-            <div key={item.id} className="bg-card border border-border rounded-xl p-4 flex items-start gap-3 hover:border-border/80 transition-colors cursor-pointer">
-              <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${item.sentiment === "positive" ? "bg-gain" : item.sentiment === "negative" ? "bg-loss" : "bg-muted-foreground"}`} />
-              <div className="flex-1">
-                <p className="text-sm font-semibold leading-snug">{item.title.replace("NVIDIA", ticker === "NVDA" ? "NVIDIA" : ticker)}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs text-muted-foreground">{item.source}</span>
-                  <span className="text-xs text-muted-foreground">·</span>
-                  <span className="text-xs text-muted-foreground">{item.time}</span>
-                </div>
-              </div>
-              <Badge variant="outline" className={`text-[10px] flex-shrink-0 ${item.sentiment === "positive" ? "border-gain/30 text-gain" : item.sentiment === "negative" ? "border-loss/30 text-loss" : "border-border text-muted-foreground"}`}>
-                {item.sentiment}
-              </Badge>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Reports Tab */}
-      {activeTab === "Reports" && (
         <div>
-          {relatedReports.length > 0 ? (
-            <div className="space-y-4">
-              {relatedReports.map((r) => (
-                <div key={r.id} className="cursor-pointer" onClick={() => navigate(`/report?id=${r.id}`)}>
-                  <div className="bg-card border border-border rounded-xl p-4 hover:border-primary/30 transition-all">
-                    <div className="flex items-center gap-2 mb-1">
-                      <img src={r.author.avatar} alt={r.author.name} className="w-6 h-6 rounded-full object-cover" />
-                      <span className="text-xs font-semibold">{r.author.name}</span>
-                      <span className="text-xs text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">{r.author.accuracy}%</span>
-                    </div>
-                    <p className="font-semibold text-sm">{r.title}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{r.likes} likes · {r.isPremium ? `$${r.price}` : "Free"}</p>
+          {financialsLoading ? (
+            <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" /> Fetching live financials...
+            </div>
+          ) : fundamentals ? (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+                {[
+                  { label: "Market Cap", value: fundamentals.marketCap },
+                  { label: "P/E Ratio", value: fundamentals.pe },
+                  { label: "Forward P/E", value: fundamentals.forwardPE },
+                  { label: "EPS (TTM)", value: fundamentals.eps },
+                  { label: "Revenue (TTM)", value: fundamentals.revenue },
+                  { label: "Revenue Growth", value: fundamentals.revenueGrowth },
+                  { label: "Gross Margin", value: fundamentals.grossMargin },
+                  { label: "Operating Margin", value: fundamentals.operatingMargin },
+                  { label: "Profit Margin", value: fundamentals.profitMargin },
+                  { label: "Net Income", value: fundamentals.netIncome },
+                  { label: "Free Cash Flow", value: fundamentals.freeCashFlow },
+                  { label: "Total Debt", value: fundamentals.totalDebt },
+                  { label: "Total Cash", value: fundamentals.totalCash },
+                  { label: "Return on Equity", value: fundamentals.returnOnEquity },
+                  { label: "Return on Assets", value: fundamentals.returnOnAssets },
+                  { label: "Div Yield", value: fundamentals.divYield },
+                  { label: "Beta", value: fundamentals.beta },
+                  { label: "52W High", value: fundamentals.week52High },
+                  { label: "52W Low", value: fundamentals.week52Low },
+                ].map(item => (
+                  <div key={item.label} className="bg-card border border-border rounded-xl p-3 text-center">
+                    <p className="text-sm font-bold">{item.value}</p>
+                    <p className="text-[10px] text-muted-foreground">{item.label}</p>
                   </div>
+                ))}
+              </div>
+              {quarterly.length > 0 && (
+                <div className="bg-card border border-border rounded-xl p-4">
+                  <h3 className="font-semibold text-sm mb-3">Quarterly Revenue (from Yahoo Finance)</h3>
+                  <ResponsiveContainer width="100%" height={160}>
+                    <BarChart data={quarterly.map(q => ({ q: q.period, rev: q.revenue ? q.revenue / 1e9 : 0 }))}>
+                      <XAxis dataKey="q" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                      <YAxis tickFormatter={v => `$${v.toFixed(0)}B`} width={45} tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                      <Tooltip formatter={(v) => [`$${v.toFixed(2)}B`, "Revenue"]} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
+                      <Bar dataKey="rev" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
+              )}
+            </>
+          ) : null}
+        </div>
+      )}
+
+      {activeTab === "News" && (
+        <div>
+          {financialsLoading ? (
+            <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" /> Fetching latest news...
+            </div>
+          ) : news.length > 0 ? (
+            <div className="space-y-3">
+              {news.map((item, i) => (
+                <a key={i} href={item.url} target="_blank" rel="noopener noreferrer"
+                  className="flex items-start justify-between gap-3 p-4 bg-card border border-border rounded-xl hover:border-primary/30 transition-all group">
+                  <div>
+                    <p className="font-medium text-sm mb-1 group-hover:text-primary transition-colors">{item.title}</p>
+                    <p className="text-xs text-muted-foreground">{item.source} · {item.time}</p>
+                  </div>
+                  <ExternalLink className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0 mt-0.5" />
+                </a>
               ))}
             </div>
           ) : (
-            <div className="text-center py-12">
-              <FileText className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
-              <p className="text-muted-foreground text-sm">No analyst reports for {ticker} yet.</p>
-            </div>
+            <p className="text-sm text-muted-foreground text-center py-8">No news available.</p>
           )}
+        </div>
+      )}
+
+      {activeTab === "Reports" && (
+        <div className="space-y-4">
+          {reports.length > 0
+            ? reports.map(r => <ReportCard key={r.id} report={r} />)
+            : <p className="text-sm text-muted-foreground text-center py-8">No reports for {ticker} yet.</p>
+          }
         </div>
       )}
     </div>

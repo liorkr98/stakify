@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Heart, Lock, Star, MessageCircle } from "lucide-react";
+import { ArrowLeft, Heart, Lock, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { MOCK_REPORTS } from "@/lib/mockData";
+import { MOCK_REPORTS, getReports } from "@/lib/mockData";
 import PredictionBadge from "@/components/feed/PredictionBadge";
 import TickerTag from "@/components/feed/TickerTag";
 import ShareMenu from "@/components/feed/ShareMenu";
@@ -17,7 +17,7 @@ Data center revenue grew 427% year-over-year in the latest quarter, far outpacin
 
 Our DCF model, using a 10% discount rate and conservative 5-year growth projections of 30% annually, yields a fair value of approximately $1,050 per share. This assumes no further market share gains and modest margin compression from competition.
 
-Enterprise AI capex is expected to triple by 2027, with hyperscalers like Microsoft, Google, and Amazon already committing multi-billion dollar orders for Blackwell architecture chips. No competition can match NVIDIA's end-to-end AI performance at this scale.
+Enterprise AI capex is expected to triple by 2027, with hyperscalers like Microsoft, Google, and Amazon already committing multi-billion dollar orders for Blackwell architecture chips.
 
 Catalysts include: the Blackwell ramp in H2 2026, Project DIGITS expansion, and sovereign AI initiatives across Europe and Asia.`;
 
@@ -26,131 +26,98 @@ export default function ReportView() {
   const urlParams = new URLSearchParams(window.location.search);
   const reportId = urlParams.get("id") || "r1";
   const isPaid = urlParams.get("paid") === "true";
-
-  const report = MOCK_REPORTS.find((r) => r.id === reportId) || MOCK_REPORTS[0];
+  const allReports = getReports();
+  const report = allReports.find((r) => r.id === reportId) || allReports[0];
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(report.likes);
 
-  const handleLike = () => {
-    setLiked(!liked);
-    setLikeCount((prev) => (liked ? prev - 1 : prev + 1));
-  };
-
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
-      {/* Back */}
-      <button
-        onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Feed
+    <div className="max-w-3xl mx-auto px-4 py-6">
+      <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
+        <ArrowLeft className="w-4 h-4" /> Back to Feed
       </button>
 
-      {/* Article Header */}
-      <div className="mb-6">
-        <div className="flex flex-wrap gap-2 mb-3">
-          {report.tickers.map((t) => (
-            <TickerTag key={t} ticker={t} />
-          ))}
-        </div>
-        <h1 className="text-3xl font-bold text-foreground leading-tight mb-4">{report.title}</h1>
+      <div className="flex flex-wrap gap-2 mb-4">
+        {report.tickers.map((t) => <TickerTag key={t} ticker={t} />)}
+      </div>
 
-        {/* Author */}
-        <div className="flex items-center gap-3 py-4 border-y border-border">
-          <button onClick={() => navigate(`/analyst?id=${report.author.id}`)}>
-            <img src={report.author.avatar} alt={report.author.name} className="w-10 h-10 rounded-full object-cover hover:ring-2 hover:ring-primary/50 transition-all" />
+      <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-4">{report.title}</h1>
+
+      <div className="flex flex-wrap items-center gap-4 mb-6">
+        <button onClick={() => navigate(`/analyst?id=${report.author.id}`)} className="flex items-center gap-2">
+          <img src={report.author.avatar} alt={report.author.name} className="w-8 h-8 rounded-full" />
+          <div>
+            <p className="text-sm font-semibold hover:text-primary transition-colors">{report.author.name}</p>
+            <p className="text-xs text-muted-foreground">{report.author.accuracy}% Acc.</p>
+          </div>
+        </button>
+        <span className="text-xs text-muted-foreground">{format(new Date(report.publishedAt), "MMMM d, yyyy · h:mm a")}</span>
+        <div className="flex items-center gap-3 ml-auto">
+          <button onClick={() => { setLiked(!liked); setLikeCount(p => liked ? p - 1 : p + 1); }} className={`flex items-center gap-1.5 text-sm transition-colors ${liked ? "text-loss" : "text-muted-foreground"}`}>
+            <Heart className={`w-4 h-4 ${liked ? "fill-loss" : ""}`} />
+            {likeCount}
           </button>
-          <div className="flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <button onClick={() => navigate(`/analyst?id=${report.author.id}`)} className="font-semibold text-sm hover:text-primary transition-colors">
-                {report.author.name}
-              </button>
-              <Badge className="bg-primary/10 text-primary border-primary/20 text-xs">
-                {report.author.accuracy}% Acc.
-              </Badge>
-              <button
-                onClick={() => navigate(`/dm?analyst=${report.author.id}`)}
-                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors border border-border/60 rounded-full px-2 py-0.5 hover:border-primary/30"
-                title="DM this analyst (subscribers only)"
-              >
-                <MessageCircle className="w-3 h-3" />
-                Message
-                <Lock className="w-2.5 h-2.5 ml-0.5 opacity-60" />
-              </button>
-            </div>
-            <span className="text-xs text-muted-foreground">
-              {format(new Date(report.publishedAt), "MMMM d, yyyy · h:mm a")}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button onClick={handleLike} className={`flex items-center gap-1.5 text-sm transition-colors ${liked ? "text-red-500" : "text-muted-foreground hover:text-red-400"}`}>
-              <Heart className={`w-4 h-4 ${liked ? "fill-red-500" : ""}`} />
-              {likeCount}
-            </button>
-            <ShareMenu title={report.title} reportId={report.id} />
-          </div>
+          <ShareMenu title={report.title} reportId={report.id} />
         </div>
       </div>
 
-      {/* Prediction Badge */}
-      <PredictionBadge prediction={report.prediction} />
+      {report.prediction && <PredictionBadge prediction={report.prediction} />}
 
-      {/* Content */}
-      <div className="mt-6 prose prose-sm max-w-none">
-        {(!report.isPremium || isPaid) ? (
-          <div className="space-y-4">
-            {FULL_CONTENT.split("\n\n").map((para, i) => (
-              <p key={i} className="text-foreground/85 leading-relaxed text-base">
-                {para}
-              </p>
-            ))}
+      {report.prediction?.outcome && (
+        <div className={`flex items-start gap-3 p-4 rounded-xl mb-6 ${report.prediction.outcome === "hit" ? "bg-gain/10 border border-gain/20" : "bg-loss/10 border border-loss/20"}`}>
+          {report.prediction.outcome === "hit"
+            ? <CheckCircle2 className="w-5 h-5 text-gain flex-shrink-0 mt-0.5" />
+            : <XCircle className="w-5 h-5 text-loss flex-shrink-0 mt-0.5" />}
+          <div>
+            <p className={`font-semibold text-sm ${report.prediction.outcome === "hit" ? "text-gain" : "text-loss"}`}>
+              {report.prediction.outcome === "hit" ? "Prediction Hit ✓" : "Prediction Missed ✗"}
+            </p>
+            <p className="text-sm text-muted-foreground mt-0.5">{report.prediction.outcomeNote}</p>
+            {report.prediction.outcome === "miss" && (
+              <div className="mt-2 text-xs text-muted-foreground bg-secondary/50 rounded-lg p-2">
+                <span className="font-semibold flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Why it missed:</span>
+                <p>The prediction did not reach the target within the specified timeframe. Market conditions, macro headwinds, or unexpected events may have impacted the outcome. Always evaluate predictions in the context of prevailing market dynamics.</p>
+              </div>
+            )}
           </div>
+        </div>
+      )}
+
+      <div className="prose prose-sm max-w-none mb-8">
+        {(!report.isPremium || isPaid) ? (
+          FULL_CONTENT.split("\n\n").map((para, i) => (
+            <p key={i} className="text-foreground/90 leading-relaxed mb-4">{para}</p>
+          ))
         ) : (
           <>
-            <p className="text-foreground/85 leading-relaxed text-base">{report.excerpt}</p>
-            <p className="text-foreground/85 leading-relaxed text-base">
+            <p className="text-foreground/90 leading-relaxed mb-4">{report.excerpt}</p>
+            <p className="text-foreground/70 leading-relaxed mb-4">
               NVIDIA's H200 chip, featuring 141 GB of HBM3e memory, represents a significant leap in memory bandwidth. Data center revenue grew 427% year-over-year in the latest quarter...
             </p>
-
-            {/* Paywall */}
-            <div className="mt-6 relative">
-              <div className="h-24 bg-gradient-to-b from-transparent to-background absolute top-0 left-0 right-0 pointer-events-none" />
-              <div className="border border-border rounded-2xl p-8 text-center bg-card mt-4">
-                <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-3">
-                  <Lock className="w-6 h-6 text-accent" />
-                </div>
-                <h3 className="font-bold text-lg mb-1">This is a Premium Report</h3>
-                <p className="text-sm text-muted-foreground mb-5">
-                  Unlock the full analysis, DCF model, and detailed catalysts.
-                </p>
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                  <Button
-                    onClick={() => navigate(`/pay?mode=report&id=${report.id}&title=${encodeURIComponent(report.title)}&price=4.99`)}
-                    className="bg-accent hover:bg-accent/90 text-white w-full sm:w-auto"
-                  >
-                    Unlock for $4.99
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => navigate("/pay?mode=subscription")}
-                    className="border-primary/30 text-primary hover:bg-primary/5 w-full sm:w-auto"
-                  >
-                    <Star className="w-3.5 h-3.5 mr-1.5" />
-                    Subscribe for $9/mo
-                  </Button>
-                </div>
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center my-8">
+              <Lock className="w-8 h-8 text-amber-500 mx-auto mb-3" />
+              <h3 className="font-bold text-base mb-2">This is a Premium Report</h3>
+              <p className="text-sm text-muted-foreground mb-4">Unlock the full analysis, DCF model, and detailed catalysts.</p>
+              <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                <Button onClick={() => navigate(`/pay?mode=report&id=${report.id}&title=${encodeURIComponent(report.title)}&price=${report.price || 4.99}&analyst=${encodeURIComponent(report.author.name)}`)} className="bg-amber-500 hover:bg-amber-600 text-white">
+                  Unlock for ${report.price || 4.99}
+                </Button>
+                <Button variant="outline" onClick={() => navigate(`/pay?mode=analyst&analyst=${encodeURIComponent(report.author.name)}`)}>
+                  Subscribe from $9/mo
+                </Button>
               </div>
             </div>
           </>
         )}
       </div>
 
-      {/* Fact Checker — only for free or already-paid reports */}
-      <FactChecker reportContent={FULL_CONTENT} isAccessible={!report.isPremium || isPaid} />
+      {(!report.isPremium || isPaid) && (
+        <div className="mb-8">
+          <FactChecker reportContent={FULL_CONTENT} />
+        </div>
+      )}
 
-      {/* Comments */}
-      <CommentsSection />
+      <CommentsSection reportId={report.id} />
     </div>
   );
 }

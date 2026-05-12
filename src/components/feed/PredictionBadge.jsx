@@ -5,42 +5,32 @@ import { format } from "date-fns";
 const ACTION_STYLES = {
   Long: { bg: "bg-gain/10 border-gain/20", text: "text-gain", icon: ArrowUp },
   Short: { bg: "bg-loss/10 border-loss/20", text: "text-loss", icon: ArrowDown },
-  Hold: { bg: "bg-accent/10 border-accent/20", text: "text-accent", icon: Minus },
+  Hold: { bg: "bg-amber-50 border-amber-200", text: "text-amber-600", icon: Minus },
 };
 
 export default function PredictionBadge({ prediction }) {
   if (!prediction) return null;
-
   const style = ACTION_STYLES[prediction.action] || ACTION_STYLES.Hold;
   const Icon = style.icon;
-
   return (
-    <div className={`rounded-lg border ${style.bg} p-3`}>
+    <div className={`rounded-xl border p-4 ${style.bg}`}>
       <div className="flex items-center gap-2 mb-2">
         <Lock className="w-3.5 h-3.5 text-muted-foreground" />
-        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
-          Locked Prediction
-        </span>
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Locked Prediction</span>
       </div>
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className={`flex items-center gap-1 px-2 py-1 rounded-md ${style.bg} border ${style.text} text-sm font-bold`}>
-          <Icon className="w-3.5 h-3.5" />
-          {prediction.action}
-        </div>
-        <span className="font-mono text-sm font-semibold text-foreground">
-          ${prediction.ticker}
-        </span>
-        <span className="text-sm text-muted-foreground">
-          Target: <span className="text-foreground font-semibold">${prediction.targetPrice}</span>
-        </span>
-        <span className="text-sm text-muted-foreground">
-          ({prediction.timeframe})
-        </span>
+      <div className="flex items-center gap-2">
+        <Icon className={`w-5 h-5 ${style.text}`} />
+        <span className={`font-bold text-lg ${style.text}`}>{prediction.action}</span>
+        <span className="font-mono font-bold text-foreground">${prediction.ticker}</span>
       </div>
-      <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
-        <span>Locked at <span className="font-mono text-foreground">${prediction.lockPrice}</span></span>
+      <div className="mt-1 text-sm text-muted-foreground">
+        Target: <span className="font-semibold text-foreground">${prediction.targetPrice}</span>
+        {" "}({prediction.timeframe})
+      </div>
+      <div className="mt-1 text-xs text-muted-foreground">
+        Locked at ${prediction.lockPrice}
         {prediction.lockTime && (
-          <span>• {format(new Date(prediction.lockTime), "MMM d, yyyy HH:mm")}</span>
+          <> · {format(new Date(prediction.lockTime), "MMM d, yyyy HH:mm")}</>
         )}
       </div>
     </div>

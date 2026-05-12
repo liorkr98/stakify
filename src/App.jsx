@@ -5,45 +5,55 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-
 import AppLayout from '@/components/layout/AppLayout';
+import { Toaster as SonnerToaster } from 'sonner';
+
+// Pages
 import HomeFeed from '@/pages/HomeFeed';
+import ReportView from '@/pages/ReportView';
 import ReportEditor from '@/pages/ReportEditor';
 import AnalystDashboard from '@/pages/AnalystDashboard';
-import ReportView from '@/pages/ReportView';
+import AnalystProfilePage from '@/pages/AnalystProfilePage';
+import StockPage from '@/pages/StockPage';
 import PaymentPage from '@/pages/PaymentPage';
+import EditProfilePage from '@/pages/EditProfilePage';
+import DMPage from '@/pages/DMPage';
+import PredictionSummaryPage from '@/pages/PredictionSummaryPage';
+import AnalyticsPage from '@/pages/AnalyticsPage';
 import AboutPage from '@/pages/AboutPage';
 import HowItWorksPage from '@/pages/HowItWorksPage';
-import CalculationsPage from '@/pages/CalculationsPage';
-import EditProfilePage from '@/pages/EditProfilePage';
-import AnalyticsPage from '@/pages/AnalyticsPage';
-import PricingPage from '@/pages/PricingPage';
 import FeaturesPage from '@/pages/FeaturesPage';
+import PricingPage from '@/pages/PricingPage';
 import NewsroomPage from '@/pages/NewsroomPage';
+import CalculationsPage from '@/pages/CalculationsPage';
 import TermsPage from '@/pages/TermsPage';
 import PrivacyPage from '@/pages/PrivacyPage';
 import CookiePolicyPage from '@/pages/CookiePolicyPage';
 import AccessibilityPage from '@/pages/AccessibilityPage';
-import AnalystProfilePage from '@/pages/AnalystProfilePage';
-import DMPage from '@/pages/DMPage';
-import StockPage from '@/pages/StockPage';
-import PredictionSummaryPage from '@/pages/PredictionSummaryPage';
+import SignIn from '@/pages/SignIn';
+import LandingPage from '@/pages/LandingPage';
+import WalletPage from '@/pages/WalletPage';
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated } = useAuth();
+  const isLoading = isLoadingPublicSettings || isLoadingAuth;
+  const isRoot = window.location.pathname === "/";
 
-  if (isLoadingPublicSettings || isLoadingAuth) {
+  // While auth is loading: show LandingPage on "/" immediately, spinner elsewhere
+  if (isLoading) {
+    if (isRoot) return <LandingPage />;
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-background">
-        <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+      <div className="fixed inset-0 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-slate-200 border-t-primary rounded-full animate-spin"></div>
       </div>
     );
   }
 
   if (authError) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
+    if (authError.type === 'user_not_registered') return <UserNotRegisteredError />;
+    else if (authError.type === 'auth_required') {
+      // On the root path, show landing page instead of redirecting to login
+      if (isRoot) return <LandingPage />;
       navigateToLogin();
       return null;
     }
@@ -51,29 +61,40 @@ const AuthenticatedApp = () => {
 
   return (
     <Routes>
+      <Route path="/signin" element={<SignIn />} />
+
+      {/* Landing — always shown on "/" for unauthenticated users (also shown while loading above) */}
+      {!isAuthenticated && <Route path="/" element={<LandingPage />} />}
+
+      {/* Routes with AppLayout */}
       <Route element={<AppLayout />}>
+        {/* Public routes */}
         <Route path="/" element={<HomeFeed />} />
-        <Route path="/editor" element={<ReportEditor />} />
-        <Route path="/dashboard" element={<AnalystDashboard />} />
         <Route path="/report" element={<ReportView />} />
+        <Route path="/analyst" element={<AnalystProfilePage />} />
+        <Route path="/stock" element={<StockPage />} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/features" element={<FeaturesPage />} />
+        <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/newsroom" element={<NewsroomPage />} />
         <Route path="/how-it-works" element={<HowItWorksPage />} />
         <Route path="/calculations" element={<CalculationsPage />} />
-        <Route path="/edit-profile" element={<EditProfilePage />} />
-        <Route path="/analytics" element={<AnalyticsPage />} />
-        <Route path="/pricing" element={<PricingPage />} />
-        <Route path="/features" element={<FeaturesPage />} />
-        <Route path="/newsroom" element={<NewsroomPage />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/cookies" element={<CookiePolicyPage />} />
         <Route path="/accessibility" element={<AccessibilityPage />} />
-        <Route path="/analyst" element={<AnalystProfilePage />} />
-        <Route path="/dm" element={<DMPage />} />
-        <Route path="/stock" element={<StockPage />} />
-        <Route path="/predictions" element={<PredictionSummaryPage />} />
+
+        {/* Auth-required routes */}
+        <Route path="/editor" element={isAuthenticated ? <ReportEditor /> : <SignIn />} />
+        <Route path="/dashboard" element={isAuthenticated ? <AnalystDashboard /> : <SignIn />} />
+        <Route path="/edit-profile" element={isAuthenticated ? <EditProfilePage /> : <SignIn />} />
+        <Route path="/dm" element={isAuthenticated ? <DMPage /> : <SignIn />} />
+        <Route path="/predictions" element={isAuthenticated ? <PredictionSummaryPage /> : <SignIn />} />
+        <Route path="/analytics" element={isAuthenticated ? <AnalyticsPage /> : <SignIn />} />
+        <Route path="/wallet" element={isAuthenticated ? <WalletPage /> : <SignIn />} />
+        <Route path="/pay" element={<PaymentPage />} />
       </Route>
-      <Route path="/pay" element={<PaymentPage />} />
+
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
@@ -87,6 +108,7 @@ function App() {
           <AuthenticatedApp />
         </Router>
         <Toaster />
+        <SonnerToaster position="top-right" richColors />
       </QueryClientProvider>
     </AuthProvider>
   )

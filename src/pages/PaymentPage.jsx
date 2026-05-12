@@ -1,208 +1,154 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, Lock, ArrowLeft, Star, Zap, CreditCard } from "lucide-react";
+import { Check, Lock, ArrowLeft, Shield, Zap, Loader2, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { base44 } from "@/api/base44Client";
 
 const SUBSCRIPTION_PLANS = [
-  {
-    key: "basic",
-    label: "Basic",
-    price: 9,
-    period: "month",
-    description: "For casual investors",
-    features: ["All published reports", "Weekly market digest", "Email notifications", "Community comments"],
-    color: "border-border",
-    highlight: false,
-  },
-  {
-    key: "pro",
-    label: "Pro",
-    price: 29,
-    period: "month",
-    description: "For serious analysts",
-    features: ["Everything in Basic", "Locked predictions access", "Direct analyst DMs", "Weekly live Q&A calls", "Early report access", "Export reports to PDF"],
-    color: "border-primary",
-    highlight: true,
-  },
+  { key: "basic", label: "Basic", price: 9, description: "For casual investors", features: ["All published reports", "Weekly market digest", "Community comments", "Prediction tracking"] },
+  { key: "pro", label: "Pro", price: 29, description: "For serious analysts", features: ["Everything in Basic", "Locked predictions access", "Direct analyst DMs", "Weekly live Q&A", "Export reports to PDF", "Early access to reports"], highlight: true },
 ];
 
-function PaymentForm({ amount, label, onSuccess }) {
-  const [card, setCard] = useState("");
-  const [expiry, setExpiry] = useState("");
-  const [cvc, setCvc] = useState("");
-  const [loading, setLoading] = useState(false);
+async function createCheckoutSession(params) {
+  const res = await base44.functions.invoke('stripeCheckout', params);
+  return res.data;
+}
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    setLoading(false);
-    onSuccess();
-  };
-
+function SuccessScreen({ mode }) {
+  const navigate = useNavigate();
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 mt-6">
-      <div>
-        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Card Number</label>
-        <div className="relative">
-          <Input
-            value={card}
-            onChange={(e) => setCard(e.target.value.replace(/\D/g, "").slice(0, 16))}
-            placeholder="4242 4242 4242 4242"
-            className="font-mono pr-10"
-          />
-          <CreditCard className="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2" />
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Expiry</label>
-          <Input value={expiry} onChange={(e) => setExpiry(e.target.value)} placeholder="MM/YY" className="font-mono" />
-        </div>
-        <div>
-          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">CVC</label>
-          <Input value={cvc} onChange={(e) => setCvc(e.target.value)} placeholder="123" className="font-mono" />
-        </div>
-      </div>
-      <Button type="submit" disabled={loading} className="w-full" size="lg">
-        <Lock className="w-4 h-4 mr-2" />
-        {loading ? "Processing..." : `Pay $${amount} — ${label}`}
-      </Button>
-      <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
-        <Lock className="w-3 h-3" /> Secured with 256-bit SSL encryption
-      </p>
-    </form>
+    <div className="max-w-sm mx-auto px-4 py-16 text-center">
+      <CheckCircle2 className="w-12 h-12 text-gain mx-auto mb-4" />
+      <h2 className="text-xl font-bold mb-2">
+        {mode === 'report' ? 'Report Unlocked!' : mode === 'boost' ? 'Boost Activated!' : 'Subscription Active!'}
+      </h2>
+      <p className="text-sm text-muted-foreground mb-6">Your payment was processed successfully.</p>
+      <Button onClick={() => navigate('/')}>Back to Feed</Button>
+    </div>
   );
 }
 
 export default function PaymentPage() {
   const navigate = useNavigate();
   const urlParams = new URLSearchParams(window.location.search);
-  const mode = urlParams.get("mode") || "subscription"; // "report" | "subscription"
-  const reportTitle = urlParams.get("title") || "NVIDIA: The AI Backbone Play for 2026";
+  const mode = urlParams.get("mode") || "subscription";
+  const reportTitle = urlParams.get("title") || "Premium Report";
   const reportPrice = parseFloat(urlParams.get("price") || "4.99");
-
+  const reportId = urlParams.get("id") || "";
+  const analystName = urlParams.get("analyst") || "";
+  const boostPlanId = urlParams.get("boostPlanId") || "";
   const [selectedPlan, setSelectedPlan] = useState("pro");
-  const [paid, setPaid] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSuccess = () => {
-    setPaid(true);
-    toast.success(mode === "report" ? "Report unlocked!" : "Subscription activated!", {
-      description: mode === "report" ? "You can now read the full report." : "Welcome to Stakify Pro.",
-    });
-    setTimeout(() => navigate(-1), 2500);
+  // Handle Stripe success/cancel redirects
+  if (urlParams.get("success") === "true" || urlParams.get("subscription") === "success" || urlParams.get("analyst_sub") === "success") {
+    return <SuccessScreen mode="subscription" />;
+  }
+  if (urlParams.get("boost") === "success") {
+    return <SuccessScreen mode="boost" />;
+  }
+
+  const handleCheckout = async (checkoutMode, extraParams = {}) => {
+    setLoading(true);
+    try {
+      const { url } = await createCheckoutSession({ mode: checkoutMode, ...extraParams });
+      if (url) {
+        window.location.href = url;
+      } else {
+        toast.error("Could not create checkout session. Please try again.");
+        setLoading(false);
+      }
+    } catch (err) {
+      toast.error(err.message || "Payment error. Please try again.");
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-2xl mx-auto px-4 py-10">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors">
-          <ArrowLeft className="w-4 h-4" />
-          Back
-        </button>
+    <div className="max-w-lg mx-auto px-4 py-8">
+      <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors">
+        <ArrowLeft className="w-4 h-4" /> Back
+      </button>
 
-        {paid ? (
-          <div className="text-center py-20">
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-              <Check className="w-8 h-8 text-primary" />
-            </div>
-            <h2 className="text-2xl font-bold mb-2">
-              {mode === "report" ? "Report Unlocked!" : "Subscription Activated!"}
-            </h2>
-            <p className="text-muted-foreground">Redirecting you back...</p>
+      {mode === "report" && (
+        <div className="bg-card border border-border rounded-2xl p-6">
+          <h1 className="text-xl font-bold mb-1">Unlock Report</h1>
+          <p className="text-sm text-muted-foreground mb-4">One-time purchase — yours forever.</p>
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+            <p className="text-xs text-amber-700 font-semibold mb-1">Premium Report</p>
+            <p className="font-semibold text-sm">{reportTitle}</p>
+            {analystName && <p className="text-xs text-muted-foreground">by {analystName}</p>}
           </div>
-        ) : mode === "report" ? (
-          <>
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-accent/10 text-accent rounded-full text-sm font-semibold mb-3">
-                <Lock className="w-3.5 h-3.5" />
-                Premium Report
-              </div>
-              <h1 className="text-2xl font-bold mb-2">{reportTitle}</h1>
-              <p className="text-muted-foreground text-sm">One-time purchase — yours forever.</p>
-            </div>
-            <div className="bg-card border border-border rounded-xl p-6">
-              <div className="flex justify-between items-center pb-4 border-b border-border mb-4">
-                <span className="font-medium">Report Access</span>
-                <span className="font-bold text-lg">${reportPrice.toFixed(2)}</span>
-              </div>
-              <ul className="space-y-2 mb-2">
-                {["Full report access", "Locked prediction details", "Charts & data", "Fact-check analysis"].map((f) => (
-                  <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Check className="w-4 h-4 text-primary flex-shrink-0" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <PaymentForm amount={reportPrice.toFixed(2)} label="Unlock Report" onSuccess={handleSuccess} />
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-sm font-semibold mb-3">
-                <Star className="w-3.5 h-3.5" />
-                Stakify Subscription
-              </div>
-              <h1 className="text-2xl font-bold mb-2">Unlock Full Access</h1>
-              <p className="text-muted-foreground text-sm">Follow the best analysts and track verified predictions.</p>
-            </div>
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-sm text-muted-foreground">One-time access</span>
+            <span className="font-bold text-lg">${reportPrice.toFixed(2)}</span>
+          </div>
+          <Button className="w-full mb-3" disabled={loading} onClick={() => handleCheckout('report', { price: reportPrice, title: reportTitle, reportId, analystName })}>
+            {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Redirecting to Stripe...</> : <><Lock className="w-4 h-4 mr-2" />Unlock for ${reportPrice.toFixed(2)}</>}
+          </Button>
+          <p className="text-xs text-center text-muted-foreground">
+            Or <button onClick={() => navigate("/pay?mode=subscription")} className="text-primary hover:underline">subscribe from $9/mo</button> for unlimited access.
+          </p>
+          <p className="text-xs text-center text-muted-foreground mt-2 flex items-center justify-center gap-1"><Shield className="w-3 h-3" /> 256-bit SSL · Powered by Stripe</p>
+        </div>
+      )}
 
-            {/* Plan Cards */}
-            <div className="grid sm:grid-cols-2 gap-4 mb-6">
-              {SUBSCRIPTION_PLANS.map((plan) => (
-                <button
-                  key={plan.key}
-                  onClick={() => setSelectedPlan(plan.key)}
-                  className={`text-left rounded-xl border-2 p-5 transition-all ${
-                    selectedPlan === plan.key
-                      ? plan.highlight ? "border-primary bg-primary/5" : "border-foreground/30 bg-secondary"
-                      : "border-border hover:border-border/80"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-base">{plan.label}</span>
-                    {plan.highlight && (
-                      <span className="text-[10px] uppercase tracking-wider bg-primary text-primary-foreground px-2 py-0.5 rounded-full font-bold">
-                        Popular
-                      </span>
-                    )}
+      {mode === "boost" && (
+        <div className="bg-card border border-border rounded-2xl p-6">
+          <h1 className="text-xl font-bold mb-1">Boost Report</h1>
+          <p className="text-sm text-muted-foreground mb-4">Increase your report's visibility on the feed.</p>
+          <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-4">
+            <p className="font-semibold text-sm">{reportTitle}</p>
+          </div>
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-sm text-muted-foreground">One-time boost</span>
+            <span className="font-bold text-lg">${reportPrice.toFixed(2)}</span>
+          </div>
+          <Button className="w-full mb-3" disabled={loading} onClick={() => handleCheckout('boost', { price: reportPrice, title: reportTitle, boostPlanId })}>
+            {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Redirecting to Stripe...</> : `Boost for $${reportPrice.toFixed(2)}`}
+          </Button>
+          <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1"><Shield className="w-3 h-3" /> 256-bit SSL · Powered by Stripe</p>
+        </div>
+      )}
+
+      {(mode === "subscription" || mode === "analyst") && (
+        <div className="bg-card border border-border rounded-2xl p-6">
+          <h1 className="text-xl font-bold mb-1">{mode === "analyst" ? `Subscribe to ${analystName || "Analyst"}` : "Unlock Full Access"}</h1>
+          <p className="text-sm text-muted-foreground mb-6">Monthly subscription · Cancel anytime.</p>
+          <div className="space-y-3 mb-6">
+            {SUBSCRIPTION_PLANS.map(plan => (
+              <button key={plan.key} onClick={() => setSelectedPlan(plan.key)}
+                className={`w-full text-left rounded-xl border-2 p-4 transition-all ${selectedPlan === plan.key ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}>
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-sm">{plan.label}</span>
+                    {plan.highlight && <span className="text-[10px] bg-primary text-white rounded-full px-1.5 py-0.5">Popular</span>}
                   </div>
-                  <p className="text-xs text-muted-foreground mb-3">{plan.description}</p>
-                  <p className="text-2xl font-bold mb-4">
-                    ${plan.price}
-                    <span className="text-sm font-normal text-muted-foreground">/{plan.period}</span>
-                  </p>
-                  <ul className="space-y-1.5">
-                    {plan.features.map((f) => (
-                      <li key={f} className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Check className={`w-3.5 h-3.5 flex-shrink-0 ${selectedPlan === plan.key ? "text-primary" : "text-muted-foreground"}`} />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                </button>
-              ))}
-            </div>
-
-            <div className="bg-card border border-border rounded-xl p-6">
-              <div className="flex justify-between items-center pb-4 border-b border-border mb-4">
-                <span className="font-medium">{SUBSCRIPTION_PLANS.find((p) => p.key === selectedPlan)?.label} Plan</span>
-                <span className="font-bold text-lg">
-                  ${SUBSCRIPTION_PLANS.find((p) => p.key === selectedPlan)?.price}/mo
-                </span>
-              </div>
-              <PaymentForm
-                amount={`${SUBSCRIPTION_PLANS.find((p) => p.key === selectedPlan)?.price}/mo`}
-                label={`${SUBSCRIPTION_PLANS.find((p) => p.key === selectedPlan)?.label} Plan`}
-                onSuccess={handleSuccess}
-              />
-            </div>
-          </>
-        )}
-      </div>
+                  <span className="font-bold text-primary">${plan.price}/mo</span>
+                </div>
+                <p className="text-xs text-muted-foreground mb-2">{plan.description}</p>
+                {plan.features.map(f => (
+                  <p key={f} className="text-xs text-muted-foreground flex items-center gap-1"><Check className="w-3 h-3 text-gain" /> {f}</p>
+                ))}
+              </button>
+            ))}
+          </div>
+          <Button className="w-full mb-3" disabled={loading} onClick={() => {
+            const plan = SUBSCRIPTION_PLANS.find(p => p.key === selectedPlan);
+            if (mode === "subscription" && selectedPlan === "pro") {
+              handleCheckout('subscription', {});
+            } else {
+              handleCheckout('analyst', { price: plan.price, analystName });
+            }
+          }}>
+            {loading
+              ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Redirecting to Stripe...</>
+              : <><Zap className="w-4 h-4 mr-2" />Subscribe for ${SUBSCRIPTION_PLANS.find(p => p.key === selectedPlan)?.price}/mo via Stripe</>}
+          </Button>
+          <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1"><Shield className="w-3 h-3" /> 256-bit SSL · Powered by Stripe · Cancel anytime</p>
+        </div>
+      )}
     </div>
   );
 }

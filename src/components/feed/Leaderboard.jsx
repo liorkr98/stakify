@@ -1,46 +1,35 @@
 import React from "react";
 import { MOCK_ANALYSTS } from "@/lib/mockData";
-import { Trophy, TrendingUp, Target } from "lucide-react";
+import { Trophy, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function Leaderboard() {
-  const RANK_COLORS = ["text-accent", "text-muted-foreground", "text-orange-400"];
+  const RANK_COLORS = ["text-amber-500", "text-slate-400", "text-orange-400"];
   const navigate = useNavigate();
-
   return (
-    <div className="bg-card border border-border/60 rounded-xl overflow-hidden">
-      <div className="px-5 py-4 border-b border-border/40">
-        <div className="flex items-center gap-2">
-          <Trophy className="w-4 h-4 text-accent" />
-          <h3 className="font-bold text-sm">Top Analysts</h3>
-        </div>
+    <div className="bg-card border border-border rounded-xl p-4">
+      <div className="flex items-center gap-2 mb-4">
+        <Trophy className="w-4 h-4 text-amber-500" />
+        <h3 className="font-semibold text-sm">Top Analysts</h3>
       </div>
-      <div className="divide-y divide-border/30">
-        {MOCK_ANALYSTS.map((analyst, index) => (
-          <div key={analyst.id} className="px-5 py-3 flex items-center gap-3 hover:bg-secondary/50 transition-colors cursor-pointer"
-            onClick={() => navigate(`/analyst?id=${analyst.id}`)}>
-            <span className={`text-lg font-bold w-6 text-center ${RANK_COLORS[index] || "text-muted-foreground"}`}>
-              {index + 1}
-            </span>
-            <img
-              src={analyst.avatar}
-              alt={analyst.name}
-              className="w-9 h-9 rounded-full object-cover ring-1 ring-border"
-            />
+      <div className="space-y-1">
+        {MOCK_ANALYSTS.slice(0, 8).map((analyst, index) => (
+          <button
+            key={analyst.id}
+            onClick={() => navigate(`/analyst?id=${analyst.id}`)}
+            className="flex items-center gap-3 w-full text-left hover:bg-secondary rounded-lg p-1 -m-1 transition-colors"
+          >
+            <span className={`text-xs font-bold w-4 text-center flex-shrink-0 ${RANK_COLORS[index] || "text-muted-foreground"}`}>{index + 1}</span>
+            <img src={analyst.avatar} alt={analyst.name} className="w-7 h-7 rounded-full flex-shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-foreground truncate hover:text-primary transition-colors">{analyst.name}</p>
-              <div className="flex items-center gap-3 mt-0.5">
-                <span className="flex items-center gap-1 text-[11px] text-gain">
-                  <Target className="w-3 h-3" />
-                  {analyst.accuracy}%
-                </span>
-                <span className="flex items-center gap-1 text-[11px] text-primary">
-                  <TrendingUp className="w-3 h-3" />
-                  +{analyst.yearlyYield}% YoY
-                </span>
-              </div>
+              <p className="text-xs font-medium truncate">{analyst.name}</p>
+              <p className="text-[10px] text-muted-foreground">{analyst.accuracy}%</p>
             </div>
-          </div>
+            <div className="flex items-center gap-0.5 text-[10px] text-gain font-semibold flex-shrink-0">
+              <TrendingUp className="w-2.5 h-2.5" />
+              +{analyst.yearlyYield}%
+            </div>
+          </button>
         ))}
       </div>
     </div>

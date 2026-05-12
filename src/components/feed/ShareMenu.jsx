@@ -1,84 +1,52 @@
 import React from "react";
-import { Share2, Twitter, Facebook, Linkedin } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
+import { Share2 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 
 const PLATFORMS = [
-  {
-    label: "X (Twitter)",
-    icon: Twitter,
-    color: "text-sky-500",
-    getUrl: (title, url) =>
-      `https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`,
-  },
-  {
-    label: "Facebook",
-    icon: Facebook,
-    color: "text-blue-600",
-    getUrl: (_, url) =>
-      `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
-  },
-  {
-    label: "LinkedIn",
-    icon: Linkedin,
-    color: "text-blue-700",
-    getUrl: (title, url) =>
-      `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}`,
-  },
-  {
-    label: "Reddit",
-    icon: null,
-    color: "text-orange-500",
-    emoji: "🤖",
-    getUrl: (title, url) =>
-      `https://reddit.com/submit?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}`,
-  },
-  {
-    label: "StockTwits",
-    icon: null,
-    color: "text-purple-500",
-    emoji: "📈",
-    getUrl: (title, url) =>
-      `https://stocktwits.com/submit?body=${encodeURIComponent(title + " " + url)}`,
-  },
+  { label: "X (Twitter)", emoji: "𝕏", getUrl: (title, url) => `https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}` },
+  { label: "StockTwits", emoji: "📈", getUrl: (title, url) => `https://stocktwits.com/transmit/share?body=${encodeURIComponent(title + " " + url)}` },
+  { label: "LinkedIn", emoji: "💼", getUrl: (title, url) => `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}` },
+  { label: "Reddit", emoji: "🤖", getUrl: (title, url) => `https://reddit.com/submit?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}` },
+  { label: "WhatsApp", emoji: "💬", getUrl: (title, url) => `https://wa.me/?text=${encodeURIComponent(title + " " + url)}` },
+  { label: "Telegram", emoji: "✈️", getUrl: (title, url) => `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}` },
+  { label: "Email", emoji: "📧", getUrl: (title, url) => `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent("Check out this research report: " + url)}` },
 ];
 
 export default function ShareMenu({ title, reportId }) {
-  const reportUrl = `${window.location.origin}/report/${reportId}`;
+  const reportUrl = `${window.location.origin}/report?id=${reportId}`;
 
-  const handleShare = (platform) => {
-    window.open(platform.getUrl(title, reportUrl), "_blank", "noopener,width=600,height=500");
+  const copyLink = () => {
+    navigator.clipboard.writeText(reportUrl);
+    toast.success("Link copied!");
   };
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+        <button className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
           <Share2 className="w-4 h-4" />
-          <span>Share</span>
+          <span className="hidden sm:inline">Share</span>
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-44">
         {PLATFORMS.map((p, i) => (
           <React.Fragment key={p.label}>
-            {i === 3 && <DropdownMenuSeparator />}
-            <DropdownMenuItem onClick={() => handleShare(p)} className="cursor-pointer">
-              <span className={`flex items-center gap-2 ${p.color}`}>
-                {p.icon ? (
-                  <p.icon className="w-4 h-4" />
-                ) : (
-                  <span className="w-4 h-4 flex items-center justify-center text-xs">{p.emoji}</span>
-                )}
-                {p.label}
-              </span>
+            {i === 4 && <DropdownMenuSeparator />}
+            <DropdownMenuItem
+              onClick={() => window.open(p.getUrl(title, reportUrl), "_blank", "noopener,width=600,height=500")}
+              className="cursor-pointer gap-2"
+            >
+              <span>{p.emoji}</span>
+              <span>{p.label}</span>
             </DropdownMenuItem>
           </React.Fragment>
         ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={copyLink} className="cursor-pointer gap-2">
+          <span>🔗</span>
+          <span>Copy Link</span>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

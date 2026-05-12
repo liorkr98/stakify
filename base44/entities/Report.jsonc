@@ -6,33 +6,86 @@
       "type": "string",
       "description": "Report title"
     },
+    "excerpt": {
+      "type": "string",
+      "description": "Short summary/teaser"
+    },
     "content_blocks": {
       "type": "array",
-      "description": "Array of content blocks (text, chart, etc.)",
-      "items": {
-        "type": "object",
-        "properties": {
-          "type": {
-            "type": "string",
-            "enum": [
-              "heading",
-              "text",
-              "bullets",
-              "chart"
-            ]
-          },
-          "content": {
-            "type": "string"
-          }
-        }
-      }
+      "description": "Array of editor blocks (type + content)"
     },
     "tickers": {
       "type": "array",
-      "description": "Tickers mentioned in the report",
       "items": {
         "type": "string"
-      }
+      },
+      "description": "Stock tickers mentioned"
+    },
+    "prediction_action": {
+      "type": "string",
+      "enum": [
+        "Long",
+        "Short",
+        "Hold"
+      ],
+      "description": "Prediction direction"
+    },
+    "prediction_ticker": {
+      "type": "string",
+      "description": "Ticker for the prediction"
+    },
+    "prediction_target_price": {
+      "type": "number",
+      "description": "Target price"
+    },
+    "prediction_lock_price": {
+      "type": "number",
+      "description": "Price at lock time"
+    },
+    "prediction_lock_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When prediction was locked"
+    },
+    "prediction_timeframe": {
+      "type": "string",
+      "description": "Timeframe e.g. 6 months"
+    },
+    "author_name": {
+      "type": "string",
+      "description": "Author display name"
+    },
+    "author_avatar": {
+      "type": "string",
+      "description": "Author avatar URL"
+    },
+    "industry": {
+      "type": "string",
+      "description": "Industry/sector"
+    },
+    "market_cap": {
+      "type": "string",
+      "enum": [
+        "mega",
+        "large",
+        "mid",
+        "small",
+        "micro"
+      ],
+      "description": "Market cap category"
+    },
+    "is_premium": {
+      "type": "boolean",
+      "default": false,
+      "description": "Requires payment to read"
+    },
+    "price": {
+      "type": "number",
+      "description": "Price if premium"
+    },
+    "likes": {
+      "type": "number",
+      "default": 0
     },
     "status": {
       "type": "string",
@@ -41,43 +94,6 @@
         "published"
       ],
       "default": "draft"
-    },
-    "author_name": {
-      "type": "string"
-    },
-    "author_avatar": {
-      "type": "string"
-    },
-    "likes": {
-      "type": "number",
-      "default": 0
-    },
-    "prediction_action": {
-      "type": "string",
-      "enum": [
-        "Long",
-        "Short",
-        "Hold"
-      ]
-    },
-    "prediction_ticker": {
-      "type": "string"
-    },
-    "prediction_target_price": {
-      "type": "number"
-    },
-    "prediction_timeframe": {
-      "type": "string"
-    },
-    "prediction_locked": {
-      "type": "boolean",
-      "default": false
-    },
-    "prediction_lock_price": {
-      "type": "number"
-    },
-    "prediction_lock_time": {
-      "type": "string"
     }
   },
   "required": [
