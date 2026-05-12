@@ -5,8 +5,8 @@ module.exports = {
   theme: {
   	extend: {
       fontFamily: {
-        sans: ['var(--font-sans)'],
-        mono: ['var(--font-mono)'],
+        sans: ['var(--font-sans)', 'Inter', 'sans-serif'],
+        serif: ['var(--font-serif)', 'Crimson Pro', 'Georgia', 'serif'],
       },
   		borderRadius: {
   			lg: 'var(--radius)',
@@ -16,8 +16,6 @@ module.exports = {
   		colors: {
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
-        gain: 'hsl(var(--gain))',
-        loss: 'hsl(var(--loss))',
   			card: {
   				DEFAULT: 'hsl(var(--card))',
   				foreground: 'hsl(var(--card-foreground))'
@@ -49,6 +47,8 @@ module.exports = {
   			border: 'hsl(var(--border))',
   			input: 'hsl(var(--input))',
   			ring: 'hsl(var(--ring))',
+        gain: 'hsl(var(--gain))',
+        loss: 'hsl(var(--loss))',
   			chart: {
   				'1': 'hsl(var(--chart-1))',
   				'2': 'hsl(var(--chart-2))',
