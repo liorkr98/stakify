@@ -1,236 +1,210 @@
-import React, { useState } from "react";
-import { getReports, MOCK_ANALYSTS } from "@/lib/mockData";
-const MOCK_REPORTS = getReports();
+import React, { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
 import ReportCard from "@/components/feed/ReportCard";
 import Leaderboard from "@/components/feed/Leaderboard";
+import TrendingPanel from "@/components/feed/TrendingPanel";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Flame, Clock, UserPlus, Compass, SlidersHorizontal, X } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Link } from "react-router-dom";
+import { TrendingUp, SlidersHorizontal, X, Flame, Clock, Tag, Eye, AlertCircle } from "lucide-react";
 
-const INDUSTRIES = ["AI & Semiconductors", "Big Tech", "EV & Clean Energy", "Financials", "Consumer Tech", "Crypto & Web3", "E-Commerce", "Healthcare", "Options Flow"];
-const MARKET_CAPS = [
-  { key: "mega", label: "Mega Cap" },
-  { key: "large", label: "Large Cap" },
-  { key: "mid", label: "Mid Cap" },
-  { key: "small", label: "Small Cap" },
-  { key: "micro", label: "Micro Cap" },
+const FEED_TABS = [
+  { id: "latest", label: "Latest", icon: Clock },
+  { id: "trending", label: "Trending", icon: Flame },
+  { id: "free", label: "Free Only", icon: Tag },
+  { id: "most_viewed", label: "Most Viewed", icon: Eye },
 ];
 
+const SECTORS = ["All", "AI & Semiconductors", "Big Tech", "EV & Clean Energy", "Financials", "Crypto & Web3", "Consumer Tech", "E-Commerce", "Healthcare"];
+const MARKET_CAPS = ["All", "Mega", "Large", "Mid", "Small", "Micro"];
+const SORT_OPTIONS = ["Latest", "Most Liked", "Premium Only", "Free Only"];
+
 export default function HomeFeed() {
-  const [activeTab, setActiveTab] = useState("trending");
-  const [following, setFollowing] = useState({});
+  const [activeTab, setActiveTab] = useState("latest");
+  const [activeSector, setActiveSector] = useState("All");
+  const [activeMarketCap, setActiveMarketCap] = useState("All");
+  const [sortBy, setSortBy] = useState("Latest");
   const [showFilters, setShowFilters] = useState(false);
-  const [filterIndustry, setFilterIndustry] = useState(null);
-  const [filterCap, setFilterCap] = useState(null);
-  const navigate = useNavigate();
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const toggleFollow = (analystId) => {
-    setFollowing((prev) => ({ ...prev, [analystId]: !prev[analystId] }));
-  };
+  useEffect(() => {
+    base44.entities.Report.filter({ status: "published" }, "-created_date", 50)
+      .then(data => setReports(data || []))
+      .catch(() => setError("Failed to load reports. Please try again."))
+      .finally(() => setLoading(false));
+  }, []);
 
-  const TABS = [
-    { key: "trending", label: "Trending", icon: Flame },
-    { key: "latest", label: "Latest", icon: Clock },
-    { key: "discover", label: "Discover", icon: Compass },
-  ];
+  const tabFiltered = reports
+    .filter(r => activeTab === "free" ? !r.is_premium : true)
+    .sort((a, b) => {
+      if (activeTab === "trending") return (b.likes || 0) - (a.likes || 0);
+      if (activeTab === "most_viewed") return (b.views || b.view_count || 0) - (a.views || a.view_count || 0);
+      return new Date(b.created_date) - new Date(a.created_date);
+    });
 
-  const applyFilters = (list) => list.filter(r =>
-    (!filterIndustry || r.industry === filterIndustry) &&
-    (!filterCap || r.marketCap === filterCap)
-  );
+  const filtered = tabFiltered
+    .filter(r => activeSector === "All" || r.industry === activeSector)
+    .filter(r => activeMarketCap === "All" || (r.market_cap || "").toLowerCase() === activeMarketCap.toLowerCase())
+    .filter(r => sortBy === "Premium Only" ? r.is_premium : sortBy === "Free Only" ? !r.is_premium : true)
+    .sort((a, b) => sortBy === "Most Liked" ? (b.likes || 0) - (a.likes || 0) : sortBy === "Latest" ? new Date(b.created_date) - new Date(a.created_date) : 0);
 
-  const trendingReports = applyFilters([...MOCK_REPORTS].sort((a, b) => b.likes - a.likes));
-  const latestReports = applyFilters([...MOCK_REPORTS].sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt)));
-  const discoverReports = applyFilters(MOCK_REPORTS.filter(r => !r.isPremium));
-  const hasFilters = filterIndustry || filterCap;
+  const activeFilterCount = (activeSector !== "All" ? 1 : 0) + (activeMarketCap !== "All" ? 1 : 0) + (sortBy !== "Latest" ? 1 : 0);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Hero */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">
-          Research <span className="text-primary">Feed</span>
-        </h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Follow analysts and track their publicly locked predictions
-        </p>
-      </div>
-
-      <div className="flex flex-col lg:flex-row gap-8">
+    <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="flex gap-6">
         {/* Main Feed */}
         <div className="flex-1 min-w-0">
-          {/* Feed Tabs */}
-          <div className="flex items-center gap-1 mb-3 border-b border-border/40 pb-3 flex-wrap">
-            {TABS.map((tab) => {
+          {/* Feed tabs */}
+          <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
+            {FEED_TABS.map(tab => {
               const Icon = tab.icon;
               return (
                 <button
-                  key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    activeTab === tab.key
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                  }`}
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all border ${activeTab === tab.id ? "bg-primary text-white border-primary shadow-sm" : "bg-card border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"}`}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-3.5 h-3.5" />
                   {tab.label}
                 </button>
               );
             })}
+          </div>
+
+          {/* Controls bar */}
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-xs text-muted-foreground">{filtered.length} Reports</span>
             <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`ml-auto flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${showFilters || hasFilters ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary"}`}
+              onClick={() => setShowFilters(true)}
+              className={`ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${activeFilterCount > 0 ? "bg-primary text-white border-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
             >
-              <SlidersHorizontal className="w-4 h-4" />
-              Filter
-              {hasFilters && <span className="w-1.5 h-1.5 rounded-full bg-primary" />}
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
             </button>
           </div>
 
-          {/* Filter Panel */}
-          {showFilters && (
-            <div className="mb-5 p-4 bg-secondary/40 border border-border/60 rounded-xl space-y-3">
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Industry</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {INDUSTRIES.map((ind) => (
-                    <button key={ind} onClick={() => setFilterIndustry(filterIndustry === ind ? null : ind)}
-                      className={`text-xs px-2.5 py-1 rounded-full border transition-all ${filterIndustry === ind ? "bg-primary text-white border-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}>
-                      {ind}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Market Cap</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {MARKET_CAPS.map((cap) => (
-                    <button key={cap.key} onClick={() => setFilterCap(filterCap === cap.key ? null : cap.key)}
-                      className={`text-xs px-2.5 py-1 rounded-full border transition-all ${filterCap === cap.key ? "bg-primary text-white border-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}>
-                      {cap.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {hasFilters && (
-                <button onClick={() => { setFilterIndustry(null); setFilterCap(null); }} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-                  <X className="w-3 h-3" /> Clear filters
-                </button>
+          {/* Active filter chips */}
+          {activeFilterCount > 0 && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {activeSector !== "All" && (
+                <span className="flex items-center gap-1 text-xs bg-primary/10 text-primary border border-primary/20 rounded-full px-2.5 py-0.5">
+                  {activeSector}
+                  <button onClick={() => setActiveSector("All")}><X className="w-3 h-3" /></button>
+                </span>
+              )}
+              {activeMarketCap !== "All" && (
+                <span className="flex items-center gap-1 text-xs bg-primary/10 text-primary border border-primary/20 rounded-full px-2.5 py-0.5">
+                  {activeMarketCap} Cap
+                  <button onClick={() => setActiveMarketCap("All")}><X className="w-3 h-3" /></button>
+                </span>
+              )}
+              {sortBy !== "Latest" && (
+                <span className="flex items-center gap-1 text-xs bg-primary/10 text-primary border border-primary/20 rounded-full px-2.5 py-0.5">
+                  {sortBy}
+                  <button onClick={() => setSortBy("Latest")}><X className="w-3 h-3" /></button>
+                </span>
               )}
             </div>
           )}
 
+          <div className="space-y-4">
+            {loading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="bg-card border border-border rounded-xl p-5 space-y-3">
+                  <div className="flex items-center gap-2.5">
+                    <Skeleton className="w-9 h-9 rounded-full" />
+                    <Skeleton className="h-3.5 w-32 rounded" />
+                  </div>
+                  <Skeleton className="h-5 w-3/4 rounded" />
+                  <Skeleton className="h-3.5 w-full rounded" />
+                  <Skeleton className="h-3.5 w-5/6 rounded" />
+                  <div className="flex gap-3 pt-1">
+                    <Skeleton className="h-3 w-12 rounded" />
+                    <Skeleton className="h-3 w-16 rounded" />
+                  </div>
+                </div>
+              ))
+            ) : error ? (
+              <div className="flex flex-col items-center gap-3 py-16 text-center">
+                <AlertCircle className="w-8 h-8 text-muted-foreground/50" />
+                <p className="text-sm text-muted-foreground">{error}</p>
+                <Button variant="outline" size="sm" onClick={() => { setError(null); setLoading(true); base44.entities.Report.filter({ status: "published" }, "-created_date", 50).then(data => setReports(data || [])).catch(() => setError("Failed to load reports. Please try again.")).finally(() => setLoading(false)); }}>
+                  Retry
+                </Button>
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground text-sm">No reports match these filters.</div>
+            ) : (
+              filtered.map(report => <ReportCard key={report.id} report={report} />)
+            )}
+          </div>
+        </div>
 
-          {/* Reports */}
-          {activeTab !== "discover" ? (
-            <div className="space-y-4">
-              {(activeTab === "trending" ? trendingReports : latestReports).map((report) => (
-                <ReportCard key={report.id} report={report} />
-              ))}
+        {/* Right Sidebar */}
+        <aside className="hidden lg:flex flex-col gap-4 w-72 flex-shrink-0">
+          <Leaderboard />
+          <TrendingPanel />
+          <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp className="w-4 h-4 text-primary" />
+              <h3 className="font-semibold text-sm text-primary">Become an Analyst</h3>
             </div>
-          ) : (
-            <div>
-              <p className="text-xs text-muted-foreground mb-4 font-medium uppercase tracking-wider">Free to read · All topics</p>
-              <div className="grid sm:grid-cols-2 gap-4 mb-8">
-                {discoverReports.map((report) => (
-                  <ReportCard key={report.id} report={report} compact />
+            <p className="text-xs text-muted-foreground mb-3">Publish research, lock predictions, build your audience.</p>
+            <Link to="/editor">
+              <Button size="sm" className="w-full text-xs">Start Writing</Button>
+            </Link>
+          </div>
+        </aside>
+      </div>
+
+      {/* Filter Modal */}
+      {showFilters && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setShowFilters(false)}>
+          <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-sm" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="font-semibold">Filter Reports</h3>
+              <button onClick={() => setShowFilters(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Sector</p>
+              <div className="flex flex-wrap gap-1.5">
+                {SECTORS.map(s => (
+                  <button key={s} onClick={() => setActiveSector(s)} className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${activeSector === s ? "bg-primary text-white border-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}>{s}</button>
                 ))}
               </div>
-              <div className="bg-card border border-border/60 rounded-xl p-5">
-                <h3 className="font-bold text-sm mb-3 flex items-center gap-2"><Compass className="w-4 h-4 text-primary" /> Browse by Specialty</h3>
-                <div className="flex flex-wrap gap-2">
-                  {["AI & Semiconductors","Big Tech","EV & Clean Energy","Macro","Consumer Tech","Financials","Crypto & Web3","Healthcare","Options Flow"].map((tag) => (
-                    <Badge key={tag} variant="outline" className="cursor-pointer hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-colors text-xs py-1 px-3">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
+            </div>
+
+            <div className="mb-4">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Market Cap</p>
+              <div className="flex flex-wrap gap-1.5">
+                {MARKET_CAPS.map(cap => (
+                  <button key={cap} onClick={() => setActiveMarketCap(cap)} className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${activeMarketCap === cap ? "bg-primary text-white border-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}>{cap}</button>
+                ))}
               </div>
             </div>
-          )}
-        </div>
 
-        {/* Sidebar */}
-        <div className="w-full lg:w-80 flex-shrink-0 space-y-6">
-          <Leaderboard />
-
-          {/* Suggested Analysts */}
-          <div className="bg-card border border-border/60 rounded-xl overflow-hidden">
-            <div className="px-5 py-4 border-b border-border/40">
-              <h3 className="font-bold text-sm">Suggested Analysts</h3>
+            <div className="mb-6">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Sort By</p>
+              <div className="flex flex-wrap gap-1.5">
+                {SORT_OPTIONS.map(s => (
+                  <button key={s} onClick={() => setSortBy(s)} className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${sortBy === s ? "bg-primary text-white border-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}>{s}</button>
+                ))}
+              </div>
             </div>
-            <div className="divide-y divide-border/30">
-              {MOCK_ANALYSTS.slice(0, 3).map((analyst) => (
-                <div key={analyst.id} className="px-5 py-3 flex items-center gap-3">
-                  <button onClick={() => navigate(`/analyst?id=${analyst.id}`)}>
-                    <img
-                      src={analyst.avatar}
-                      alt={analyst.name}
-                      className="w-9 h-9 rounded-full object-cover ring-1 ring-border hover:ring-primary/40 transition-all"
-                    />
-                  </button>
-                  <div className="flex-1 min-w-0">
-                    <button onClick={() => navigate(`/analyst?id=${analyst.id}`)} className="text-sm font-semibold truncate hover:text-primary transition-colors block text-left">{analyst.name}</button>
-                    <p className="text-xs text-muted-foreground">
-                      {analyst.followers.toLocaleString()} followers
-                    </p>
-                  </div>
-                  <Button
-                    variant={following[analyst.id] ? "secondary" : "outline"}
-                    size="sm"
-                    className={`text-xs h-7 ${
-                      following[analyst.id]
-                        ? "bg-primary/10 text-primary border-primary/30"
-                        : "border-border hover:border-primary/30 hover:text-primary"
-                    }`}
-                    onClick={() => toggleFollow(analyst.id)}
-                  >
-                    {following[analyst.id] ? (
-                      "Following"
-                    ) : (
-                      <>
-                        <UserPlus className="w-3 h-3 mr-1" />
-                        Follow
-                      </>
-                    )}
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </div>
 
-          {/* Market Summary */}
-          <div className="bg-card border border-border/60 rounded-xl p-5">
-            <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-primary" />
-              Market Pulse
-            </h3>
-            <div className="space-y-2">
-              {[
-                { label: "S&P 500", value: "5,234.18", change: "+0.85%" },
-                { label: "NASDAQ", value: "16,742.39", change: "+1.12%" },
-                { label: "BTC/USD", value: "68,432.50", change: "-0.45%" },
-              ].map((item) => (
-                <div key={item.label} className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">{item.label}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-foreground">{item.value}</span>
-                    <span
-                      className={`font-mono text-xs ${
-                        item.change.startsWith("+") ? "text-gain" : "text-loss"
-                      }`}
-                    >
-                      {item.change}
-                    </span>
-                  </div>
-                </div>
-              ))}
+            <div className="flex gap-2">
+              <button onClick={() => { setActiveSector("All"); setActiveMarketCap("All"); setSortBy("Latest"); }} className="flex-1 text-sm text-muted-foreground hover:text-foreground border border-border rounded-lg py-2 transition-colors">Clear All</button>
+              <button onClick={() => setShowFilters(false)} className="flex-1 bg-primary text-white rounded-lg py-2 text-sm font-medium hover:bg-primary/90 transition-colors">Apply</button>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
